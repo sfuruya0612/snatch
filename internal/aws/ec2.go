@@ -18,6 +18,7 @@ func DescribeEc2(c *cli.Context) error {
 
 	svc := NewEc2Sess(profile, region)
 
+	// 1k以上を取得する場合はDescribeInstancesPagesを使用する必要がある
 	res, err := svc.DescribeInstances(nil)
 	if err != nil {
 		panic(err)
@@ -38,11 +39,11 @@ func DescribeEc2(c *cli.Context) error {
 				*i.InstanceId,
 				*i.InstanceType,
 				*i.PrivateIpAddress,
-				/*				*i.PublicIpAddress,
+				/*              *i.PublicIpAddress,
 				 *i.State.Name,*/
 			}
 
-			// Parserに飛ばしてから出力させたい
+			// format.goで整形してから出力させたい
 			fmt.Println(resources)
 		}
 	}

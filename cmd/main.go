@@ -10,6 +10,7 @@ import (
 
 var (
 	date      string
+	hash      string
 	goversion string
 )
 
@@ -17,7 +18,7 @@ func main() {
 	//snatch := Exec(date, goversion)
 	snatch := Exec()
 	if err := snatch.Run(os.Args); err != nil {
-		fmt.Println(err)
+		fmt.Printf("\n[ERROR] %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -28,7 +29,9 @@ func Exec() *cli.App {
 
 	app.Name = "snatch"
 	app.Usage = "Show AWS resources cli command. (Made in Golang)"
-	app.Version = "0.0.2"
+	//	app.Version = fmt.Printf("%s %s(%s), date, hash, goversion")
+	app.Version = "0.1.0"
+	app.EnableBashCompletion = true
 
 	app.Commands = []cli.Command{
 		{
@@ -46,6 +49,7 @@ func Exec() *cli.App {
 					Value: "ap-northeast-1",
 					Usage: "Select Region.",
 				},
+				// extra, -e フラグ追加予定
 			},
 		},
 		{
