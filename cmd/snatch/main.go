@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ShoichiFuruya/snatch/internal/aws"
+	"github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/urfave/cli"
 )
 
@@ -15,22 +15,19 @@ var (
 )
 
 func main() {
-	//snatch := Exec(date, goversion)
-	snatch := Exec()
+	snatch := Exec(date, hash, goversion)
 	if err := snatch.Run(os.Args); err != nil {
 		fmt.Printf("\n[ERROR] %v\n", err)
 		os.Exit(1)
 	}
 }
 
-//func Exec(date, goversion) *cli.App {
-func Exec() *cli.App {
+func Exec(date, hash, goversion string) *cli.App {
 	app := cli.NewApp()
 
 	app.Name = "snatch"
-	app.Usage = "Show AWS resources cli command. (Made in Golang)"
-	//	app.Version = fmt.Printf("%s %s(%s), date, hash, goversion")
-	app.Version = "0.1.0"
+	app.Usage = "Show AWS resources cli command."
+	app.Version = fmt.Sprintf("%s %s (%s)", date, hash, goversion)
 	app.EnableBashCompletion = true
 
 	app.Commands = []cli.Command{
