@@ -3,7 +3,6 @@ package aws
 import (
 	"fmt"
 
-	//	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sfuruya0612/snatch/internal/util"
 	"github.com/urfave/cli"
@@ -76,58 +75,58 @@ func DescribeRds(c *cli.Context) error {
 	return nil
 }
 
-func (dbinstances DbInstances) Name() []string {
+func (dins DbInstances) Name() []string {
 	name := []string{}
-	for _, i := range dbinstances {
+	for _, i := range dins {
 		name = append(name, i.Name)
 	}
 	return name
 }
 
-func (dbinstances DbInstances) DBInstanceClass() []string {
+func (dins DbInstances) DBInstanceClass() []string {
 	class := []string{}
-	for _, i := range dbinstances {
+	for _, i := range dins {
 		class = append(class, i.DBInstanceClass)
 	}
 	return class
 }
 
-func (dbinstances DbInstances) Engine() []string {
+func (dins DbInstances) Engine() []string {
 	eg := []string{}
-	for _, i := range dbinstances {
+	for _, i := range dins {
 		eg = append(eg, i.Engine)
 	}
 	return eg
 }
 
-func (dbinstances DbInstances) EngineVersion() []string {
+func (dins DbInstances) EngineVersion() []string {
 	egv := []string{}
-	for _, i := range dbinstances {
+	for _, i := range dins {
 		egv = append(egv, i.EngineVersion)
 	}
 	return egv
 }
 
-func (dbinstances DbInstances) DBInstanceStatus() []string {
+func (dins DbInstances) DBInstanceStatus() []string {
 	st := []string{}
-	for _, i := range dbinstances {
+	for _, i := range dins {
 		st = append(st, i.DBInstanceStatus)
 	}
 	return st
 }
 
-func (dbinstances DbInstances) Endpoint() []string {
+func (dins DbInstances) Endpoint() []string {
 	ep := []string{}
-	for _, i := range dbinstances {
+	for _, i := range dins {
 		ep = append(ep, i.Endpoint)
 	}
 	return ep
 }
 
 /*
-func (dbinstances DbInstances) EndpointPort() []string {
+func (dins DbInstances) EndpointPort() []string {
 	port := []string{}
-	for _, i := range dbinstances {
+	for _, i := range dins {
 		port = append(port, i.EndpointPort)
 	}
 	return port

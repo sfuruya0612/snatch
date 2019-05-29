@@ -95,57 +95,57 @@ func DescribeEc2(c *cli.Context) error {
 	return nil
 }
 
-func (instances Instances) Name() []string {
+func (ins Instances) Name() []string {
 	name := []string{}
-	for _, i := range instances {
+	for _, i := range ins {
 		name = append(name, i.Name)
 	}
 	return name
 }
 
-func (instances Instances) InstanceId() []string {
+func (ins Instances) InstanceId() []string {
 	id := []string{}
-	for _, i := range instances {
+	for _, i := range ins {
 		id = append(id, i.InstanceId)
 	}
 	return id
 }
 
-func (instances Instances) InstanceType() []string {
+func (ins Instances) InstanceType() []string {
 	ty := []string{}
-	for _, i := range instances {
+	for _, i := range ins {
 		ty = append(ty, i.InstanceType)
 	}
 	return ty
 }
 
-func (instances Instances) PrivateIpAddress() []string {
+func (ins Instances) PrivateIpAddress() []string {
 	pip := []string{}
-	for _, i := range instances {
+	for _, i := range ins {
 		pip = append(pip, i.PrivateIpAddress)
 	}
 	return pip
 }
 
-func (instances Instances) PublicIpAddress() []string {
+func (ins Instances) PublicIpAddress() []string {
 	gip := []string{}
-	for _, i := range instances {
+	for _, i := range ins {
 		gip = append(gip, i.PublicIpAddress)
 	}
 	return gip
 }
 
-func (instances Instances) State() []string {
+func (ins Instances) State() []string {
 	st := []string{}
-	for _, i := range instances {
+	for _, i := range ins {
 		st = append(st, i.State)
 	}
 	return st
 }
 
-func (instances Instances) KeyName() []string {
+func (ins Instances) KeyName() []string {
 	key := []string{}
-	for _, i := range instances {
+	for _, i := range ins {
 		key = append(key, i.KeyName)
 	}
 	return key

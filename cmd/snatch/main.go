@@ -66,6 +66,42 @@ func Exec(date, hash, goversion string) *cli.App {
 				},
 			},
 		},
+		{
+			Name:   "ec",
+			Usage:  "Get ElastiCache list",
+			Action: aws.DescribeCacheClusters,
+			/*			Subcommands: []cli.Command{
+						{
+							Name:   "rg",
+							Usage:  "Get Replication Group list.",
+							Action: aws.DescribeReplicationGroups,
+							Flags: []cli.Flag{
+								cli.StringFlag{
+									Name:  "profile, p",
+									Value: "default",
+									Usage: "Choose AWS credential.",
+								},
+								cli.StringFlag{
+									Name:  "region",
+									Value: "ap-northeast-1",
+									Usage: "Select Region.",
+								},
+							},
+						},
+					},*/
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "profile, p",
+					Value: "default",
+					Usage: "Choose AWS credential.",
+				},
+				cli.StringFlag{
+					Name:  "region",
+					Value: "ap-northeast-1",
+					Usage: "Select Region.",
+				},
+			},
+		},
 	}
 	return app
 }
