@@ -17,7 +17,7 @@ var (
 func main() {
 	snatch := Exec(date, hash, goversion)
 	if err := snatch.Run(os.Args); err != nil {
-		fmt.Printf("\n[ERROR] %v\n", err)
+		fmt.Printf("\n[ERROR]: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -30,77 +30,46 @@ func Exec(date, hash, goversion string) *cli.App {
 	app.Version = fmt.Sprintf("%s %s (%s)", date, hash, goversion)
 	app.EnableBashCompletion = true
 
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "profile, p",
+			Value: "default",
+			Usage: "Choose AWS credential.",
+		},
+		cli.StringFlag{
+			Name:  "region, r",
+			Value: "ap-northeast-1",
+			Usage: "Select Region.",
+		},
+	}
+
 	app.Commands = []cli.Command{
 		{
 			Name:   "ec2",
-			Usage:  "Get EC2 list",
-			Action: aws.DescribeEc2,
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "profile, p",
-					Value: "default",
-					Usage: "Choose AWS credential.",
-				},
-				cli.StringFlag{
-					Name:  "region",
-					Value: "ap-northeast-1",
-					Usage: "Select Region.",
-				},
-				// extra, -e フラグ追加予定
-			},
+			Usage:  "Show EC2 resources. (default: Describe EC2 instances)",
+			Action: aws.DescribeInstances,
 		},
 		{
 			Name:   "rds",
-			Usage:  "Get RDS list",
-			Action: aws.DescribeRds,
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "profile, p",
-					Value: "default",
-					Usage: "Choose AWS credential.",
-				},
-				cli.StringFlag{
-					Name:  "region",
-					Value: "ap-northeast-1",
-					Usage: "Select Region.",
+			Usage:  "Show RDS resources. (default: Describe RDS instances)",
+			Action: aws.DescribeDBInstances,
+		},
+		{
+			Name:   "ec",
+			Usage:  "Show ElastiCache resources. (default: Describe Cache Clusters)",
+			Action: aws.DescribeCacheClusters,
+			Subcommands: []cli.Command{
+				{
+					Name:   "rg",
+					Usage:  "Describe Replication Groups.",
+					Action: aws.DescribeReplicationGroups,
 				},
 			},
 		},
 		{
-			Name:   "ec",
-			Usage:  "Get ElastiCache list",
-			Action: aws.DescribeCacheClusters,
-			/*			Subcommands: []cli.Command{
-						{
-							Name:   "rg",
-							Usage:  "Get Replication Group list.",
-							Action: aws.DescribeReplicationGroups,
-							Flags: []cli.Flag{
-								cli.StringFlag{
-									Name:  "profile, p",
-									Value: "default",
-									Usage: "Choose AWS credential.",
-								},
-								cli.StringFlag{
-									Name:  "region",
-									Value: "ap-northeast-1",
-									Usage: "Select Region.",
-								},
-							},
-						},
-					},*/
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "profile, p",
-					Value: "default",
-					Usage: "Choose AWS credential.",
-				},
-				cli.StringFlag{
-					Name:  "region",
-					Value: "ap-northeast-1",
-					Usage: "Select Region.",
-				},
-			},
+			Name:   "route53",
+			Usage:  "Show Rotue53 resources. (default: List hosted zones)",
+			Action: aws.ListHostedZones,
 		},
 	}
 	return app

@@ -19,11 +19,8 @@ type CacheNode struct {
 type CacheNodes []CacheNode
 
 type GroupNode struct {
-	Name               string
-	CacheNodeType      string
-	Engine             string
-	EngineVersion      string
-	CacheClusterStatus string
+	Name   string
+	Status string
 }
 
 type GroupNodes []GroupNode
@@ -34,8 +31,8 @@ func NewEcSess(profile string, region string) *elasticache.ElastiCache {
 }
 
 func DescribeCacheClusters(c *cli.Context) error {
-	profile := c.String("profile")
-	region := c.String("region")
+	profile := c.GlobalString("profile")
+	region := c.GlobalString("region")
 
 	svc := NewEcSess(profile, region)
 
@@ -77,10 +74,9 @@ func DescribeCacheClusters(c *cli.Context) error {
 	return nil
 }
 
-/*
 func DescribeReplicationGroups(c *cli.Context) error {
-	profile := c.String("profile")
-	region := c.String("region")
+	profile := c.GlobalString("profile")
+	region := c.GlobalString("region")
 
 	svc := NewEcSess(profile, region)
 
@@ -89,22 +85,16 @@ func DescribeReplicationGroups(c *cli.Context) error {
 		return fmt.Errorf("Describe running nodes: %v", err)
 	}
 
-	list := CacheNodes{}
-	for _, i := range res.CacheClusters {
-		list = append(list, CacheNode{
-			Name:               *i.CacheClusterId,
-			CacheNodeType:      *i.CacheNodeType,
-			Engine:             *i.Engine,
-			EngineVersion:      *i.EngineVersion,
-			CacheClusterStatus: *i.CacheClusterStatus,
+	list := GroupNodes{}
+	for _, i := range res.ReplicationGroups {
+		list = append(list, GroupNode{
+			Name:   *i.ReplicationGroupId,
+			Status: *i.Status,
 		})
 	}
 	f := util.Formatln(
 		list.Name(),
-		list.CacheNodeType(),
-		list.Engine(),
-		list.EngineVersion(),
-		list.CacheClusterStatus(),
+		list.Status(),
 		[]string{""},
 	)
 
@@ -112,16 +102,13 @@ func DescribeReplicationGroups(c *cli.Context) error {
 		fmt.Printf(
 			f,
 			i.Name,
-			i.CacheNodeType,
-			i.Engine,
-			i.EngineVersion,
-			i.CacheClusterStatus,
+			i.Status,
 		)
 	}
 
 	return nil
 }
-*/
+
 func (cn CacheNodes) Name() []string {
 	name := []string{}
 	for _, i := range cn {
@@ -158,6 +145,22 @@ func (cn CacheNodes) CacheClusterStatus() []string {
 	st := []string{}
 	for _, i := range cn {
 		st = append(st, i.CacheClusterStatus)
+	}
+	return st
+}
+
+func (gn GroupNodes) Name() []string {
+	name := []string{}
+	for _, i := range gn {
+		name = append(name, i.Name)
+	}
+	return name
+}
+
+func (gn GroupNodes) Status() []string {
+	st := []string{}
+	for _, i := range gn {
+		st = append(st, i.Status)
 	}
 	return st
 }

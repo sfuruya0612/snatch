@@ -26,9 +26,9 @@ func NewEc2Sess(profile string, region string) *ec2.EC2 {
 	return ec2.New(sess)
 }
 
-func DescribeEc2(c *cli.Context) error {
-	profile := c.String("profile")
-	region := c.String("region")
+func DescribeInstances(c *cli.Context) error {
+	profile := c.GlobalString("profile")
+	region := c.GlobalString("region")
 
 	svc := NewEc2Sess(profile, region)
 

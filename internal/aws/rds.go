@@ -25,9 +25,9 @@ func NewRdsSess(profile string, region string) *rds.RDS {
 	return rds.New(sess)
 }
 
-func DescribeRds(c *cli.Context) error {
-	profile := c.String("profile")
-	region := c.String("region")
+func DescribeDBInstances(c *cli.Context) error {
+	profile := c.GlobalString("profile")
+	region := c.GlobalString("region")
 
 	svc := NewRdsSess(profile, region)
 
