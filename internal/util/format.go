@@ -2,8 +2,6 @@ package util
 
 import "strconv"
 
-//import "strings"
-
 func Formatln(list ...[]string) string {
 	return Format(list...) + "\n"
 }

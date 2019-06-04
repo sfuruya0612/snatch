@@ -14,3 +14,13 @@ install:
 delete:
 	-rm ${GOPATH}/bin/${APP}
 
+build:
+	rm -rf build
+	mkdir build
+
+	GOOS=linux GOARGH=amd64 go build -ldflags "${LDFLAGS}" ${MODULE}
+	zip build/${APP}_linux_amd64.zip ${APP}
+
+	GOOS=darwin GOARGH=amd64 go build -ldflags "${LDFLAGS}" ${MODULE}
+	zip build/${APP}_darwin_amd64.zip ${APP}
+
