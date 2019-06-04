@@ -14,7 +14,7 @@ func getSession(profile string, region string) *session.Session {
 		Config:            aws.Config{Region: aws.String(region)},
 	}
 
-	fmt.Printf("AWS_PROFILE: %+v\n", profile)
+	fmt.Printf("AWS_PROFILE: %s , REGION: %s\n", profile, region)
 
 	return session.Must(session.NewSessionWithOptions(opts))
 }

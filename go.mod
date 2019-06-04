@@ -1,4 +1,4 @@
-module github.com/ShoichiFuruya/snatch
+module github.com/sfuruya0612/snatch
 
 go 1.12
 
