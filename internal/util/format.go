@@ -11,7 +11,6 @@ func Format(list ...[]string) string {
 	for _, c := range list {
 		f = f + format(c)
 	}
-
 	return f
 }
 

@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -32,8 +33,6 @@ func DescribeInstances(c *cli.Context) error {
 
 	svc := NewEc2Sess(profile, region)
 
-	// 1k以上のホスト情報を取得する場合は
-	// DescribeInstancesPages を使用する必要がある
 	res, err := svc.DescribeInstances(nil)
 	if err != nil {
 		return fmt.Errorf("Describe running instances: %v", err)
@@ -76,8 +75,8 @@ func DescribeInstances(c *cli.Context) error {
 		list.PublicIpAddress(),
 		list.State(),
 		list.KeyName(),
-		[]string{""},
 	)
+	sort.Sort(list)
 
 	for _, i := range list {
 		fmt.Printf(
@@ -149,4 +148,16 @@ func (ins Instances) KeyName() []string {
 		key = append(key, i.KeyName)
 	}
 	return key
+}
+
+func (ins Instances) Len() int {
+	return len(ins)
+}
+
+func (ins Instances) Swap(i, j int) {
+	ins[i], ins[j] = ins[j], ins[i]
+}
+
+func (ins Instances) Less(i, j int) bool {
+	return ins[i].Name < ins[j].Name
 }

@@ -35,4 +35,5 @@ GLOBAL OPTIONS:
    --region value, -r value   Select Region. (default: "ap-northeast-1")
    --help, -h                 show help
    --version, -v              print the version
+
 ```

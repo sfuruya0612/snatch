@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sfuruya0612/snatch/internal/util"
@@ -15,7 +16,7 @@ type DbInstance struct {
 	EngineVersion    string
 	DBInstanceStatus string
 	Endpoint         string
-	EndpointPort     int64
+	EndpointPort     string
 }
 
 type DbInstances []DbInstance
@@ -38,6 +39,8 @@ func DescribeDBInstances(c *cli.Context) error {
 
 	list := DbInstances{}
 	for _, i := range res.DBInstances {
+		port := strconv.FormatInt(*i.Endpoint.Port, 10)
+
 		list = append(list, DbInstance{
 			Name:             *i.DBInstanceIdentifier,
 			DBInstanceClass:  *i.DBInstanceClass,
@@ -45,7 +48,7 @@ func DescribeDBInstances(c *cli.Context) error {
 			EngineVersion:    *i.EngineVersion,
 			DBInstanceStatus: *i.DBInstanceStatus,
 			Endpoint:         *i.Endpoint.Address,
-			EndpointPort:     *i.Endpoint.Port,
+			EndpointPort:     port,
 		})
 	}
 	f := util.Formatln(
@@ -55,8 +58,7 @@ func DescribeDBInstances(c *cli.Context) error {
 		list.EngineVersion(),
 		list.DBInstanceStatus(),
 		list.Endpoint(),
-		//		list.EndpointPort(),
-		[]string{""},
+		list.EndpointPort(),
 	)
 
 	for _, i := range list {
@@ -123,11 +125,10 @@ func (dins DbInstances) Endpoint() []string {
 	return ep
 }
 
-/*
 func (dins DbInstances) EndpointPort() []string {
 	port := []string{}
 	for _, i := range dins {
 		port = append(port, i.EndpointPort)
 	}
 	return port
-}*/
+}

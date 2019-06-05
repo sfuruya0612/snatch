@@ -57,7 +57,6 @@ func DescribeCacheClusters(c *cli.Context) error {
 		list.Engine(),
 		list.EngineVersion(),
 		list.CacheClusterStatus(),
-		[]string{""},
 	)
 
 	for _, i := range list {
@@ -95,7 +94,6 @@ func DescribeReplicationGroups(c *cli.Context) error {
 	f := util.Formatln(
 		list.Name(),
 		list.Status(),
-		[]string{""},
 	)
 
 	for _, i := range list {
