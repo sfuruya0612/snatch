@@ -9,7 +9,7 @@ cd ~/snatch
 make install
 ```
 
-## Help example
+## Help
 ``` sh
 $ snatch -h
 NAME:
@@ -35,4 +35,11 @@ GLOBAL OPTIONS:
    --region value, -r value   Select Region. (default: "ap-northeast-1")
    --help, -h                 show help
    --version, -v              print the version
+
+```
+
+# Docker run
+``` sh
+make image
+docker run snatch:latest
 ```

@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -14,7 +15,7 @@ type Record struct {
 	Name        string
 	DomainName  string
 	Type        string
-	TTL         int64
+	TTL         string
 	DomainValue []string
 }
 
@@ -59,6 +60,8 @@ func ListHostedZones(c *cli.Context) error {
 				r.TTL = aws.Int64(0000)
 			}
 
+			ttl := strconv.FormatInt(*r.TTL, 10)
+
 			var value []string
 			if r.AliasTarget == nil {
 				for _, rr := range r.ResourceRecords {
@@ -69,11 +72,11 @@ func ListHostedZones(c *cli.Context) error {
 			}
 
 			list = append(list, Record{
-				Id:         *h.Id,
-				Name:       *h.Name,
-				DomainName: *r.Name,
-				Type:       *r.Type,
-				//	TTL:         *r.TTL,
+				Id:          *h.Id,
+				Name:        *h.Name,
+				DomainName:  *r.Name,
+				Type:        *r.Type,
+				TTL:         ttl,
 				DomainValue: value,
 			})
 		}
@@ -83,9 +86,8 @@ func ListHostedZones(c *cli.Context) error {
 		list.Name(),
 		list.DomainName(),
 		list.Type(),
-		//list.TTL(),
+		list.TTL(),
 		list.DomainValue(),
-		[]string{""},
 	)
 
 	for _, i := range list {
@@ -95,7 +97,7 @@ func ListHostedZones(c *cli.Context) error {
 			i.Name,
 			i.DomainName,
 			i.Type,
-			//i.TTL,
+			i.TTL,
 			i.DomainValue,
 		)
 	}
@@ -134,7 +136,6 @@ func (rec Records) Type() []string {
 	return ty
 }
 
-/*
 func (rec Records) TTL() []string {
 	ttl := []string{}
 	for _, i := range rec {
@@ -142,7 +143,7 @@ func (rec Records) TTL() []string {
 	}
 	return ttl
 }
-*/
+
 func (rec Records) DomainValue() []string {
 	dvalue := []string{}
 	for _, i := range rec {
