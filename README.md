@@ -9,7 +9,7 @@ cd ~/snatch
 make install
 ```
 
-## Help example
+## Help
 ``` sh
 $ snatch -h
 NAME:
@@ -36,4 +36,10 @@ GLOBAL OPTIONS:
    --help, -h                 show help
    --version, -v              print the version
 
+```
+
+# Docker run
+``` sh
+make image
+docker run snatch:latest
 ```

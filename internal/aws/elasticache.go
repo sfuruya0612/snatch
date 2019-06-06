@@ -2,7 +2,9 @@ package aws
 
 import (
 	"fmt"
+	"strconv"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/sfuruya0612/snatch/internal/util"
 	"github.com/urfave/cli"
@@ -19,8 +21,13 @@ type CacheNode struct {
 type CacheNodes []CacheNode
 
 type GroupNode struct {
-	Name   string
-	Status string
+	Name           string
+	Status         string
+	Endpoint       string
+	Port           string
+	CacheClusterId string
+	CacheNodeId    string
+	CurrentRole    string
 }
 
 type GroupNodes []GroupNode
@@ -85,15 +92,48 @@ func DescribeReplicationGroups(c *cli.Context) error {
 	}
 
 	list := GroupNodes{}
+	var (
+		endpoint string
+		port     string
+	)
 	for _, i := range res.ReplicationGroups {
-		list = append(list, GroupNode{
-			Name:   *i.ReplicationGroupId,
-			Status: *i.Status,
-		})
+		if i.ConfigurationEndpoint != nil {
+			endpoint = *i.ConfigurationEndpoint.Address
+			port = strconv.FormatInt(*i.ConfigurationEndpoint.Port, 10)
+		}
+
+		for _, n := range i.NodeGroups {
+			if n.PrimaryEndpoint != nil {
+				endpoint = *n.PrimaryEndpoint.Address
+				port = strconv.FormatInt(*n.PrimaryEndpoint.Port, 10)
+			}
+
+			for _, nm := range n.NodeGroupMembers {
+				if nm.CurrentRole == nil {
+					nm.CurrentRole = aws.String("NULL")
+				}
+
+				list = append(list, GroupNode{
+					Name:           *i.ReplicationGroupId,
+					Status:         *i.Status,
+					Endpoint:       endpoint,
+					Port:           port,
+					CacheClusterId: *nm.CacheClusterId,
+					CacheNodeId:    *nm.CacheNodeId,
+					CurrentRole:    *nm.CurrentRole,
+				})
+			}
+		}
+
 	}
 	f := util.Formatln(
 		list.Name(),
 		list.Status(),
+		list.Endpoint(),
+		list.Port(),
+		list.CacheClusterId(),
+		list.CacheNodeId(),
+		list.CurrentRole(),
 	)
 
 	for _, i := range list {
@@ -101,6 +141,11 @@ func DescribeReplicationGroups(c *cli.Context) error {
 			f,
 			i.Name,
 			i.Status,
+			i.Endpoint,
+			i.Port,
+			i.CacheClusterId,
+			i.CacheNodeId,
+			i.CurrentRole,
 		)
 	}
 
@@ -161,4 +206,44 @@ func (gn GroupNodes) Status() []string {
 		st = append(st, i.Status)
 	}
 	return st
+}
+
+func (gn GroupNodes) Endpoint() []string {
+	ep := []string{}
+	for _, i := range gn {
+		ep = append(ep, i.Endpoint)
+	}
+	return ep
+}
+
+func (gn GroupNodes) Port() []string {
+	p := []string{}
+	for _, i := range gn {
+		p = append(p, i.Port)
+	}
+	return p
+}
+
+func (gn GroupNodes) CacheClusterId() []string {
+	cc := []string{}
+	for _, i := range gn {
+		cc = append(cc, i.CacheClusterId)
+	}
+	return cc
+}
+
+func (gn GroupNodes) CacheNodeId() []string {
+	cn := []string{}
+	for _, i := range gn {
+		cn = append(cn, i.CacheNodeId)
+	}
+	return cn
+}
+
+func (gn GroupNodes) CurrentRole() []string {
+	cr := []string{}
+	for _, i := range gn {
+		cr = append(cr, i.CurrentRole)
+	}
+	return cr
 }

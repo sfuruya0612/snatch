@@ -56,6 +56,10 @@ func DescribeInstances(c *cli.Context) error {
 				i.PublicIpAddress = aws.String("NULL")
 			}
 
+			if i.KeyName == nil {
+				i.KeyName = aws.String("NULL")
+			}
+
 			list = append(list, Instance{
 				Name:             tag_name,
 				InstanceId:       *i.InstanceId,
