@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sfuruya0612/snatch/cmd/snatch/command"
 	"github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/urfave/cli"
 )
@@ -15,19 +16,20 @@ var (
 )
 
 func main() {
-	snatch := Exec(date, hash, goversion)
+	snatch := New(date, hash, goversion)
 	if err := snatch.Run(os.Args); err != nil {
 		fmt.Printf("\n[ERROR]: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func Exec(date, hash, goversion string) *cli.App {
+// New returns cli.App
+func New(date, hash, goversion string) *cli.App {
 	app := cli.NewApp()
 
 	app.Name = "snatch"
 	app.Usage = "Show AWS resources cli command."
-	app.Version = fmt.Sprintf("%s %s (%s)", date, hash, goversion)
+	app.Version = fmt.Sprintf("%s %s (Build by: %s)", date, hash, goversion)
 	app.EnableBashCompletion = true
 
 	app.Flags = []cli.Flag{
@@ -47,7 +49,7 @@ func Exec(date, hash, goversion string) *cli.App {
 		{
 			Name:   "ec2",
 			Usage:  "Show EC2 resources. (default: Describe EC2 instances)",
-			Action: aws.DescribeInstances,
+			Action: command.ListEc2,
 		},
 		{
 			Name:   "rds",

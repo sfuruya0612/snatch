@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
 )
 
 type Instance struct {
@@ -22,18 +21,17 @@ type Instance struct {
 
 type Instances []Instance
 
-func NewEc2Sess(profile string, region string) *ec2.EC2 {
+// newEc2Sess returns *ec2.EC2
+func newEc2Sess(profile string, region string) *ec2.EC2 {
 	sess := getSession(profile, region)
 	return ec2.New(sess)
 }
 
-func DescribeInstances(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+// DescribeInstances returns ec2.DescribeInstances
+func DescribeInstances(profile string, region string) error {
+	ec2 := newEc2Sess(profile, region)
 
-	svc := NewEc2Sess(profile, region)
-
-	res, err := svc.DescribeInstances(nil)
+	res, err := ec2.DescribeInstances(nil)
 	if err != nil {
 		return fmt.Errorf("Describe running instances: %v", err)
 	}
