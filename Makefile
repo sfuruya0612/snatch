@@ -11,10 +11,6 @@ install:
 	go mod tidy
 	go install -ldflags "${LDFLAGS}" ${MODULE}
 
-delete:
-	-rm ${GOPATH}/bin/${NAME}
-	rm -rf build
-
 .PHONY: build
 build:
 	rm -rf build
@@ -26,7 +22,13 @@ build:
 	GOOS=darwin GOARGH=amd64 go build -ldflags "${LDFLAGS}" ${MODULE}
 	zip build/${NAME}_darwin_amd64.zip ${NAME}
 
-.PHONY: build
-image: build
-	docker build -t snatch ./
-	docker images | grep snatch
+	rm ${NAME}
+
+image:
+	docker-compose build
+	docker images | grep snatch_cli
+
+clean:
+	-rm ${GOPATH}/bin/${NAME}
+	rm -rf build
+	docker rmi --force ${NAME}_cli
