@@ -54,7 +54,7 @@ func New(date, hash, goversion string) *cli.App {
 		{
 			Name:   "rds",
 			Usage:  "Show RDS resources. (default: Describe RDS instances)",
-			Action: aws.DescribeDBInstances,
+			Action: command.ListRds,
 		},
 		{
 			Name:   "ec",
