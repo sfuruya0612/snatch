@@ -12,9 +12,10 @@ func ListRds(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	list := aws.DescribeDBInstances(profile, region)
-
-	fmt.Println(list)
+	err := aws.DescribeDBInstances(profile, region)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
 
 	return nil
 }

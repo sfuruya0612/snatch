@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
 )
 
 type CacheNode struct {
@@ -37,10 +36,7 @@ func NewEcSess(profile string, region string) *elasticache.ElastiCache {
 	return elasticache.New(sess)
 }
 
-func DescribeCacheClusters(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
+func DescribeCacheClusters(profile string, region string) error {
 	svc := NewEcSess(profile, region)
 
 	res, err := svc.DescribeCacheClusters(nil)
@@ -80,10 +76,7 @@ func DescribeCacheClusters(c *cli.Context) error {
 	return nil
 }
 
-func DescribeReplicationGroups(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
+func DescribeReplicationGroups(profile string, region string) error {
 	svc := NewEcSess(profile, region)
 
 	res, err := svc.DescribeReplicationGroups(nil)

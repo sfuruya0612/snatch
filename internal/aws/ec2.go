@@ -78,8 +78,8 @@ func DescribeInstances(profile string, region string) error {
 		list.State(),
 		list.KeyName(),
 	)
-	sort.Sort(list)
 
+	sort.Sort(list)
 	for _, i := range list {
 		fmt.Printf(
 			f,

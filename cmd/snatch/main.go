@@ -59,12 +59,12 @@ func New(date, hash, goversion string) *cli.App {
 		{
 			Name:   "ec",
 			Usage:  "Show ElastiCache resources. (default: Describe Cache Clusters)",
-			Action: aws.DescribeCacheClusters,
+			Action: command.ListElasticache,
 			Subcommands: []cli.Command{
 				{
 					Name:   "rg",
 					Usage:  "Describe Replication Groups.",
-					Action: aws.DescribeReplicationGroups,
+					Action: command.ListReplicationGroups,
 				},
 			},
 		},

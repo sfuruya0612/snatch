@@ -1,7 +1,23 @@
 # snatch
-AWSリソース情報を取得するGolang製ツール(該当AWS CLI options：describe, event, ...)
+AWSリソース情報を取得するGolang製ツール  
 
-## Help
+## Getting started
+* Go 1.11.x or later.
+* You need to set your $GOPATH and have $GOPATH/bin in your path.
+
+### Install
+``` sh
+go get github.com/sfuruya0612/snatch/cmd/snatch
+```
+
+or git clone (default install to darwin)
+``` sh
+git clone https://github.com/sfuruya0612/snatch
+make install
+```
+
+## Usage
+
 ``` sh
 $ snatch -h
 NAME:
@@ -30,18 +46,10 @@ GLOBAL OPTIONS:
 
 ```
 
-## Install
-``` sh
-make install
-```
+## Testing
 
-## Docker run
+### Docker run(Testing linux ver)
 ``` sh
 make image
 docker-compose run cli snatch -p <value> <command>
-```
-
-## Uninstall
-``` sh
-make clean
 ```
