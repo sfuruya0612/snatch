@@ -14,6 +14,12 @@ or git clone (default install to darwin)
 ``` sh
 git clone https://github.com/sfuruya0612/snatch
 make install
+snatch -h
+```
+
+### Setting the tab completion
+``` sh
+printf '\n%s\n%s\n%s\n' '# for snatch autocomplete' "test -f ~/.snatch_$(basename $SHELL)_autocomplete || curl -LRsS https://raw.githubusercontent.com/urfave/cli/master/autocomplete/$(basename $SHELL)_autocomplete -o ~/.snatch_$(basename $SHELL)_autocomplete" "PROG=snatch source ~/.snatch_$(basename $SHELL)_autocomplete" >> "${HOME}/.$(basename $SHELL)rc"
 ```
 
 ## Usage

@@ -69,6 +69,16 @@ func New(date, hash, goversion string) *cli.App {
 			},
 		},
 		{
+			Name:   "elb",
+			Usage:  "Show Elastic Load Balancer(Classic) resources. (default: Describe Load Balancers)",
+			Action: command.ListElb,
+		},
+		{
+			Name:   "elbv2",
+			Usage:  "Show Elastic Load Balancer(Application & Network) resources. (default: Describe Load Balancers)",
+			Action: command.ListElbv2,
+		},
+		{
 			Name:   "route53",
 			Usage:  "Show Rotue53 resources. (default: List hosted zones)",
 			Action: aws.ListHostedZones,

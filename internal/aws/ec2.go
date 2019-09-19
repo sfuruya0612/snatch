@@ -39,6 +39,7 @@ func DescribeInstances(profile string, region string) error {
 	list := Instances{}
 	for _, r := range res.Reservations {
 		for _, i := range r.Instances {
+
 			var tag_name string
 			for _, t := range i.Tags {
 				if *t.Key == "Name" {
