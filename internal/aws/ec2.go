@@ -17,6 +17,7 @@ type Instance struct {
 	PublicIpAddress  string
 	State            string
 	KeyName          string
+	AvailabilityZone string
 }
 
 type Instances []Instance
@@ -67,6 +68,7 @@ func DescribeInstances(profile string, region string) error {
 				PublicIpAddress:  *i.PublicIpAddress,
 				State:            *i.State.Name,
 				KeyName:          *i.KeyName,
+				AvailabilityZone: *i.Placement.AvailabilityZone,
 			})
 		}
 	}
@@ -78,6 +80,7 @@ func DescribeInstances(profile string, region string) error {
 		list.PublicIpAddress(),
 		list.State(),
 		list.KeyName(),
+		list.AvailabilityZone(),
 	)
 
 	sort.Sort(list)
@@ -91,6 +94,7 @@ func DescribeInstances(profile string, region string) error {
 			i.PublicIpAddress,
 			i.State,
 			i.KeyName,
+			i.AvailabilityZone,
 		)
 	}
 
@@ -151,6 +155,14 @@ func (ins Instances) KeyName() []string {
 		key = append(key, i.KeyName)
 	}
 	return key
+}
+
+func (ins Instances) AvailabilityZone() []string {
+	az := []string{}
+	for _, i := range ins {
+		az = append(az, i.AvailabilityZone)
+	}
+	return az
 }
 
 func (ins Instances) Len() int {
