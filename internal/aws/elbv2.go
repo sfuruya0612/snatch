@@ -47,7 +47,10 @@ func DescribeLoadBalancersv2(profile string, region string) error {
 		list.Type(),
 	)
 
-	sort.Sort(list)
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Name < list[j].Name
+	})
+
 	for _, i := range list {
 		fmt.Printf(
 			f,
@@ -91,16 +94,4 @@ func (bal Balancersv2) Type() []string {
 		t = append(t, i.Type)
 	}
 	return t
-}
-
-func (bal Balancersv2) Len() int {
-	return len(bal)
-}
-
-func (bal Balancersv2) Swap(i, j int) {
-	bal[i], bal[j] = bal[j], bal[i]
-}
-
-func (bal Balancersv2) Less(i, j int) bool {
-	return bal[i].Name < bal[j].Name
 }

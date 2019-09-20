@@ -11,10 +11,10 @@ import (
 
 type Instance struct {
 	Name             string
-	InstanceId       string
+	InstanceID       string
 	InstanceType     string
-	PrivateIpAddress string
-	PublicIpAddress  string
+	PrivateIPAddress string
+	PublicIPAddress  string
 	State            string
 	KeyName          string
 	AvailabilityZone string
@@ -62,10 +62,10 @@ func DescribeInstances(profile string, region string) error {
 
 			list = append(list, Instance{
 				Name:             tag_name,
-				InstanceId:       *i.InstanceId,
+				InstanceID:       *i.InstanceId,
 				InstanceType:     *i.InstanceType,
-				PrivateIpAddress: *i.PrivateIpAddress,
-				PublicIpAddress:  *i.PublicIpAddress,
+				PrivateIPAddress: *i.PrivateIpAddress,
+				PublicIPAddress:  *i.PublicIpAddress,
 				State:            *i.State.Name,
 				KeyName:          *i.KeyName,
 				AvailabilityZone: *i.Placement.AvailabilityZone,
@@ -74,24 +74,27 @@ func DescribeInstances(profile string, region string) error {
 	}
 	f := util.Formatln(
 		list.Name(),
-		list.InstanceId(),
+		list.InstanceID(),
 		list.InstanceType(),
-		list.PrivateIpAddress(),
-		list.PublicIpAddress(),
+		list.PrivateIPAddress(),
+		list.PublicIPAddress(),
 		list.State(),
 		list.KeyName(),
 		list.AvailabilityZone(),
 	)
 
-	sort.Sort(list)
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Name < list[j].Name
+	})
+
 	for _, i := range list {
 		fmt.Printf(
 			f,
 			i.Name,
-			i.InstanceId,
+			i.InstanceID,
 			i.InstanceType,
-			i.PrivateIpAddress,
-			i.PublicIpAddress,
+			i.PrivateIPAddress,
+			i.PublicIPAddress,
 			i.State,
 			i.KeyName,
 			i.AvailabilityZone,
@@ -109,10 +112,10 @@ func (ins Instances) Name() []string {
 	return name
 }
 
-func (ins Instances) InstanceId() []string {
+func (ins Instances) InstanceID() []string {
 	id := []string{}
 	for _, i := range ins {
-		id = append(id, i.InstanceId)
+		id = append(id, i.InstanceID)
 	}
 	return id
 }
@@ -125,18 +128,18 @@ func (ins Instances) InstanceType() []string {
 	return ty
 }
 
-func (ins Instances) PrivateIpAddress() []string {
+func (ins Instances) PrivateIPAddress() []string {
 	pip := []string{}
 	for _, i := range ins {
-		pip = append(pip, i.PrivateIpAddress)
+		pip = append(pip, i.PrivateIPAddress)
 	}
 	return pip
 }
 
-func (ins Instances) PublicIpAddress() []string {
+func (ins Instances) PublicIPAddress() []string {
 	gip := []string{}
 	for _, i := range ins {
-		gip = append(gip, i.PublicIpAddress)
+		gip = append(gip, i.PublicIPAddress)
 	}
 	return gip
 }
@@ -163,16 +166,4 @@ func (ins Instances) AvailabilityZone() []string {
 		az = append(az, i.AvailabilityZone)
 	}
 	return az
-}
-
-func (ins Instances) Len() int {
-	return len(ins)
-}
-
-func (ins Instances) Swap(i, j int) {
-	ins[i], ins[j] = ins[j], ins[i]
-}
-
-func (ins Instances) Less(i, j int) bool {
-	return ins[i].Name < ins[j].Name
 }

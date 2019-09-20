@@ -9,9 +9,10 @@ import (
 )
 
 type Balancer struct {
-	Name    string
-	DNSName string
-	Scheme  string
+	Name      string
+	DNSName   string
+	Scheme    string
+	Instances []string
 }
 
 type Balancers []Balancer
@@ -32,25 +33,38 @@ func DescribeLoadBalancers(profile string, region string) error {
 	list := Balancers{}
 	for _, i := range res.LoadBalancerDescriptions {
 
+		var instance []string
+		if i.Instances != nil {
+			for _, ii := range i.Instances {
+				instance = append(instance, *ii.InstanceId)
+			}
+		}
+
 		list = append(list, Balancer{
-			Name:    *i.LoadBalancerName,
-			DNSName: *i.DNSName,
-			Scheme:  *i.Scheme,
+			Name:      *i.LoadBalancerName,
+			DNSName:   *i.DNSName,
+			Scheme:    *i.Scheme,
+			Instances: instance,
 		})
 	}
 	f := util.Formatln(
 		list.Name(),
 		list.DNSName(),
 		list.Scheme(),
+		list.Instances(),
 	)
 
-	sort.Sort(list)
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Name < list[j].Name
+	})
+
 	for _, i := range list {
 		fmt.Printf(
 			f,
 			i.Name,
 			i.DNSName,
 			i.Scheme,
+			i.Instances,
 		)
 	}
 
@@ -81,14 +95,10 @@ func (bal Balancers) Scheme() []string {
 	return scheme
 }
 
-func (bal Balancers) Len() int {
-	return len(bal)
-}
-
-func (bal Balancers) Swap(i, j int) {
-	bal[i], bal[j] = bal[j], bal[i]
-}
-
-func (bal Balancers) Less(i, j int) bool {
-	return bal[i].Name < bal[j].Name
+func (bal Balancers) Instances() []string {
+	ins := []string{}
+	for _, i := range bal {
+		ins = append(ins, i.Instances...)
+	}
+	return ins
 }

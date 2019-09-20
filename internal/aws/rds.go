@@ -58,7 +58,10 @@ func DescribeDBInstances(profile string, region string) error {
 		list.EndpointPort(),
 	)
 
-	sort.Sort(list)
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Name < list[j].Name
+	})
+
 	for _, i := range list {
 		fmt.Printf(
 			f,
@@ -129,16 +132,4 @@ func (dins DbInstances) EndpointPort() []string {
 		port = append(port, i.EndpointPort)
 	}
 	return port
-}
-
-func (dins DbInstances) Len() int {
-	return len(dins)
-}
-
-func (dins DbInstances) Swap(i, j int) {
-	dins[i], dins[j] = dins[j], dins[i]
-}
-
-func (dins DbInstances) Less(i, j int) bool {
-	return dins[i].Name < dins[j].Name
 }
