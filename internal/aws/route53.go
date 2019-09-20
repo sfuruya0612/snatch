@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
 )
 
 type Record struct {
@@ -30,13 +29,10 @@ func NewRoute53Sess(profile string, region string) *route53.Route53 {
 	return route53.New(sess)
 }
 
-func ListHostedZones(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+func ListHostedZones(profile string, region string) error {
+	r53 := NewRoute53Sess(profile, region)
 
-	svc := NewRoute53Sess(profile, region)
-
-	res, err := svc.ListHostedZones(nil)
+	res, err := r53.ListHostedZones(nil)
 	if err != nil {
 		return fmt.Errorf("List hostedzones sets: %v", err)
 	}
@@ -49,7 +45,7 @@ func ListHostedZones(c *cli.Context) error {
 			HostedZoneId: Id,
 		}
 
-		rec, err := svc.ListResourceRecordSets(input)
+		rec, err := r53.ListResourceRecordSets(input)
 		if err != nil {
 			return fmt.Errorf("List record sets: %v", err)
 		}

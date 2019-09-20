@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/sfuruya0612/snatch/cmd/snatch/command"
-	"github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/urfave/cli"
 )
 
@@ -81,7 +80,7 @@ func New(date, hash, goversion string) *cli.App {
 		{
 			Name:   "route53",
 			Usage:  "Show Rotue53 resources. (default: List hosted zones)",
-			Action: aws.ListHostedZones,
+			Action: command.ListHostedZones,
 		},
 	}
 	return app
