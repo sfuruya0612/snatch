@@ -7,7 +7,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-// ListElasticache returns error
 func ListElasticache(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
@@ -20,7 +19,6 @@ func ListElasticache(c *cli.Context) error {
 	return nil
 }
 
-// ListReplicationGroup returns error
 func ListReplicationGroups(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")

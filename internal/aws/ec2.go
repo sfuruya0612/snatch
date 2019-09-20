@@ -22,13 +22,11 @@ type Instance struct {
 
 type Instances []Instance
 
-// newEc2Sess returns *ec2.EC2
 func newEc2Sess(profile string, region string) *ec2.EC2 {
 	sess := getSession(profile, region)
 	return ec2.New(sess)
 }
 
-// DescribeInstances returns ec2.DescribeInstances
 func DescribeInstances(profile string, region string) error {
 	ec2 := newEc2Sess(profile, region)
 

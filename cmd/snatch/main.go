@@ -27,7 +27,7 @@ func New(date, hash, goversion string) *cli.App {
 	app := cli.NewApp()
 
 	app.Name = "snatch"
-	app.Usage = "Show AWS resources cli command."
+	app.Usage = "This is the cli command to get and display Amazon Web Services resources."
 	app.Version = fmt.Sprintf("%s %s (Build by: %s)", date, hash, goversion)
 	app.EnableBashCompletion = true
 
@@ -35,52 +35,64 @@ func New(date, hash, goversion string) *cli.App {
 		cli.StringFlag{
 			Name:  "profile, p",
 			Value: "default",
-			Usage: "Choose AWS credential.",
+			Usage: "Specify the AWS profile listed in ~/.aws/config.",
 		},
 		cli.StringFlag{
 			Name:  "region, r",
 			Value: "ap-northeast-1",
-			Usage: "Select Region.",
+			Usage: "Specify the AWS region.",
 		},
 	}
 
 	app.Commands = []cli.Command{
 		{
 			Name:   "ec2",
-			Usage:  "Show EC2 resources. (default: Describe EC2 instances)",
+			Usage:  "Get a list of EC2 resources. (API: DescribeInstances)",
 			Action: command.ListEc2,
 		},
 		{
 			Name:   "rds",
-			Usage:  "Show RDS resources. (default: Describe RDS instances)",
+			Usage:  "Get a list of RDS resources. (API: DescribeDbInstances)",
 			Action: command.ListRds,
 		},
 		{
 			Name:   "ec",
-			Usage:  "Show ElastiCache resources. (default: Describe Cache Clusters)",
+			Usage:  "Get a list of ElastiCache Cluster resources. (API: DescribeCacheClusters)",
 			Action: command.ListElasticache,
 			Subcommands: []cli.Command{
 				{
 					Name:   "rg",
-					Usage:  "Describe Replication Groups.",
+					Usage:  "Get a list of ElastiCache Node resources. (API: DescribeReplicationGroups)",
 					Action: command.ListReplicationGroups,
 				},
 			},
 		},
 		{
 			Name:   "elb",
-			Usage:  "Show Elastic Load Balancer(Classic) resources. (default: Describe Load Balancers)",
+			Usage:  "Get a list of ELB(Classic) resources. (API: DescribeLoadBalancers)",
 			Action: command.ListElb,
 		},
 		{
 			Name:   "elbv2",
-			Usage:  "Show Elastic Load Balancer(Application & Network) resources. (default: Describe Load Balancers)",
+			Usage:  "Get a list of ELB(Application & Network) resources. (API: DescribeLoadBalancers)",
 			Action: command.ListElbv2,
 		},
 		{
 			Name:   "route53",
-			Usage:  "Show Rotue53 resources. (default: List hosted zones)",
+			Usage:  "Get a list of Rotue53 Record resources. (API: ListHostedZones and ListResourceRecordSets)",
 			Action: command.ListHostedZones,
+		},
+		{
+			Name:   "ssm",
+			Usage:  "Start a session on your instances by launching bash or shell terminal. (API: StartSession)",
+			Action: command.StartSession,
+			Subcommands: []cli.Command{
+				{
+					Name:   "run",
+					Usage:  "Runs commands on one target instance. (API: SendCommand)",
+					Action: command.SendCommand,
+				},
+			},
 		},
 	}
 	return app

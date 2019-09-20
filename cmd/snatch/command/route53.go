@@ -7,7 +7,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-// ListEc2 returns nil
 func ListHostedZones(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")

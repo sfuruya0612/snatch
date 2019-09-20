@@ -7,7 +7,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-// ListRds returns nil
 func ListRds(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
