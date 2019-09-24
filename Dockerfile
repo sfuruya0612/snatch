@@ -9,7 +9,8 @@ RUN apk --no-cache --update add \
     ca-certificates
 
 RUN unzip /root/${APP}_linux_amd64.zip \
-    && mv snatch /usr/bin/ \
-    && chmod +x /usr/bin/${APP}
+    && mv ${APP} /usr/bin/ \
+    && chmod +x /usr/bin/${APP} \
+    && ${APP}
 
 RUN apk del unzip
