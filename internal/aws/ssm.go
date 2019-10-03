@@ -60,6 +60,7 @@ func StartSession(profile, region string) error {
 
 func ListInstances(client *ssm.SSM) (SsmInstances, error) {
 	input := &ssm.DescribeInstanceInformationInput{
+		MaxResults: aws.Int64(50),
 		Filters: []*ssm.InstanceInformationStringFilter{
 			{
 				Key:    aws.String("PingStatus"),
