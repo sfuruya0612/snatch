@@ -11,7 +11,7 @@ func StartSession(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	err := aws.DescribeInstances(profile, region)
+	err := aws.StartSession(profile, region)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
