@@ -27,7 +27,7 @@ func newEc2Sess(profile string, region string) *ec2.EC2 {
 	return ec2.New(sess)
 }
 
-func DescribeInstances(profile string, region string) error {
+func DescribeInstances(profile, region, tag string) error {
 	ec2 := newEc2Sess(profile, region)
 
 	res, err := ec2.DescribeInstances(nil)

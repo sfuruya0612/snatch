@@ -50,6 +50,12 @@ func New(date, hash, goversion string) *cli.App {
 			Name:   "ec2",
 			Usage:  "Get a list of EC2 resources. (API: DescribeInstances)",
 			Action: command.ListEc2,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "tag, t",
+					Usage: "The Key-Value of the tag to filter. (e.g. -t Name:test-ec2)",
+				},
+			},
 		},
 		{
 			Name:   "rds",
@@ -92,6 +98,20 @@ func New(date, hash, goversion string) *cli.App {
 					Name:   "run",
 					Usage:  "Runs commands on one target instance. (API: SendCommand)",
 					Action: command.SendCommand,
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "file, f",
+							Usage: "Set execute file.",
+						},
+						cli.StringFlag{
+							Name:  "tag, t",
+							Usage: "Set Key-Value of the tag. (e.g. -t Name:test-ec2)",
+						},
+						cli.StringFlag{
+							Name:  "instanceid, i",
+							Usage: "Set EC2 instance id.",
+						},
+					},
 				},
 			},
 		},

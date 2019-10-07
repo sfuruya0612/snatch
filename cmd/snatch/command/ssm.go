@@ -23,7 +23,19 @@ func SendCommand(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	err := aws.DescribeInstances(profile, region)
+	args := c.Args()
+	file := c.String("file")
+	if len(args) == 0 && len(file) == 0 {
+		return fmt.Errorf("Args or file is required")
+	}
+
+	id := c.String("instanceid")
+	tag := c.String("tag")
+	if len(id) == 0 && len(tag) == 0 {
+		return fmt.Errorf("Instance id or tag is required")
+	}
+
+	err := aws.SendCommand(profile, region, file, id, tag, args)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

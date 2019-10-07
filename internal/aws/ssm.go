@@ -1,8 +1,12 @@
 package aws
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"sort"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ssm"
@@ -54,6 +58,126 @@ func StartSession(profile, region string) error {
 
 	token, err := client.StartSession(input)
 	fmt.Println(token)
+
+	return nil
+}
+
+func SendCommand(profile, region, file, id, tag string, args []string) error {
+	client := newSsmSess(profile, region)
+
+	param := make(map[string][]*string)
+
+	if len(args) > 0 {
+		command := []*string{
+			aws.String(args[0]),
+		}
+		param["commands"] = command
+	}
+
+	if len(file) > 0 {
+		f, err := os.Open(file)
+		if err != nil {
+			return fmt.Errorf("open file %s: %v", file, err)
+		}
+		defer f.Close()
+
+		command := []*string{}
+		s := bufio.NewScanner(f)
+		for s.Scan() {
+			command = append(command, aws.String(s.Text()))
+		}
+		param["commands"] = command
+	}
+
+	input := &ssm.SendCommandInput{
+		DocumentName:   aws.String("AWS-RunShellScript"),
+		MaxErrors:      aws.String("1"),
+		TimeoutSeconds: aws.Int64(60),
+		Parameters:     param,
+	}
+
+	if len(id) > 0 {
+		input.InstanceIds = []*string{aws.String(id)}
+	}
+
+	if len(tag) > 0 {
+		spl := strings.Split(tag, ":")
+		if len(spl) != 2 {
+			return fmt.Errorf("Parse tag=%s", tag)
+		}
+		input.Targets = []*ssm.Target{
+			{
+				Key:    aws.String("tag:" + spl[0]),
+				Values: []*string{aws.String(spl[1])},
+			},
+		}
+	}
+
+	out, err := client.SendCommand(input)
+	if err != nil {
+		return fmt.Errorf("Command send: %v", err)
+	}
+
+	get := &ssm.ListCommandInvocationsInput{
+		CommandId: out.Command.CommandId,
+		Details:   aws.Bool(true),
+	}
+
+	for {
+		got, err := client.ListCommandInvocations(get)
+		if err != nil {
+			return fmt.Errorf("List command invocation: %v", err)
+		}
+
+		if len(got.CommandInvocations) == 0 {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+
+		inprogress := false
+		for _, ci := range got.CommandInvocations {
+			if *ci.Status == "InProgress" {
+				inprogress = true
+				break
+			}
+		}
+
+		if inprogress {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+
+		type Response struct {
+			InstanceID string   `json:"instance_id"`
+			Status     string   `json:"status"`
+			Output     []string `json:"output"`
+		}
+
+		resp := []Response{}
+		for _, ci := range got.CommandInvocations {
+			out := *ci.CommandPlugins[0].Output
+			spl := strings.Split(out, "\n")
+			if len(spl[len(spl)-1]) < 1 {
+				spl = spl[:len(spl)-1]
+			}
+
+			res := Response{
+				InstanceID: *ci.InstanceId,
+				Status:     *ci.Status,
+				Output:     spl,
+			}
+			resp = append(resp, res)
+
+			if len(out) < 2500 {
+				continue
+			}
+
+			res.Output = spl
+		}
+		fmt.Println(resp)
+
+		break
+	}
 
 	return nil
 }

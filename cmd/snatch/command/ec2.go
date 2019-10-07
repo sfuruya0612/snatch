@@ -10,8 +10,9 @@ import (
 func ListEc2(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
+	tag := c.String("tag")
 
-	err := aws.DescribeInstances(profile, region)
+	err := aws.DescribeInstances(profile, region, tag)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
