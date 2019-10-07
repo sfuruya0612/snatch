@@ -33,9 +33,10 @@ func New(date, hash, goversion string) *cli.App {
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "profile, p",
-			Value: "default",
-			Usage: "Specify the AWS profile listed in ~/.aws/config.",
+			Name:   "profile, p",
+			EnvVar: "AWS_PROFILE",
+			Value:  "default",
+			Usage:  "Specify the AWS profile listed in ~/.aws/config.",
 		},
 		cli.StringFlag{
 			Name:  "region, r",
