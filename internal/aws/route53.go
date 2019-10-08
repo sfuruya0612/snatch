@@ -35,7 +35,8 @@ func ListHostedZones(profile string, region string) error {
 
 	list := Records{}
 	for _, h := range res.HostedZones {
-		zoneid := *h.Id
+		id := strings.Split(*h.Id, "/")
+		zoneid := id[2]
 
 		input := &route53.ListResourceRecordSetsInput{
 			HostedZoneId: h.Id,
