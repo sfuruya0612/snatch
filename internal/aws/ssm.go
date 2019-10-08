@@ -24,6 +24,12 @@ type SsmInstance struct {
 
 type SsmInstances []SsmInstance
 
+type Response struct {
+	InstanceId string   `json:"instance_id"`
+	Status     string   `json:"status"`
+	Output     []string `json:"output"`
+}
+
 func newSsmSess(profile, region string) *ssm.SSM {
 	sess := getSession(profile, region)
 	return ssm.New(sess)
@@ -147,12 +153,6 @@ func SendCommand(profile, region, file, id, tag string, args []string) error {
 			continue
 		}
 
-		type Response struct {
-			InstanceID string   `json:"instance_id"`
-			Status     string   `json:"status"`
-			Output     []string `json:"output"`
-		}
-
 		resp := []Response{}
 		for _, ci := range got.CommandInvocations {
 			out := *ci.CommandPlugins[0].Output
@@ -162,7 +162,7 @@ func SendCommand(profile, region, file, id, tag string, args []string) error {
 			}
 
 			res := Response{
-				InstanceID: *ci.InstanceId,
+				InstanceId: *ci.InstanceId,
 				Status:     *ci.Status,
 				Output:     spl,
 			}
@@ -174,7 +174,18 @@ func SendCommand(profile, region, file, id, tag string, args []string) error {
 
 			res.Output = spl
 		}
-		fmt.Println(resp)
+		json, err := util.JParser(resp)
+		if err != nil {
+			return fmt.Errorf("Json Marshal: %v", err)
+		}
+
+		for r := range json {
+			fmt.Printf("\n\x1b[35mInstance_id:\x1b[0m %v \x1b[35mStatus:\x1b[0m %v\n\x1b[35mOutput:\x1b[0m\n", json[r].Instance_id, json[r].Status)
+
+			for _, o := range json[r].Output {
+				fmt.Printf("%v\n", o)
+			}
+		}
 
 		break
 	}
