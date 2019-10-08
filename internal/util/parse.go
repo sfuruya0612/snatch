@@ -20,3 +20,12 @@ func JParser(in interface{}) ([]Response, error) {
 
 	return res, nil
 }
+
+func Marshal(in interface{}) ([]byte, error) {
+	bytes, err := json.Marshal(in)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes, nil
+}

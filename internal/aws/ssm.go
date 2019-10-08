@@ -2,6 +2,7 @@ package aws
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"sort"
@@ -38,7 +39,7 @@ func newSsmSess(profile, region string) *ssm.SSM {
 func StartSession(profile, region string) error {
 	client := newSsmSess(profile, region)
 
-	list, err := ListInstances(client)
+	list, err := listInstances(client)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
@@ -62,8 +63,95 @@ func StartSession(profile, region string) error {
 		Target: aws.String(instance),
 	}
 
-	token, err := client.StartSession(input)
-	fmt.Println(token)
+	sess, endpoint, err := createStartSession(client, input)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	sessJson, err := util.Marshal(sess)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	paramsJson, err := util.Marshal(input)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	// call session-manager-plugin
+	// plug := viper.GetString("plugin")
+	// err = callSubprocess(plug, string(sessJson), region, "StartSession", profile, string(paramsJson), endpoint)
+	fmt.Printf("\x1b[35mCreate Session:\x1b[0m %s\n", *sess.SessionId)
+	err = util.CallSubprocess("ssh", string(sessJson), "StartSession", string(paramsJson), endpoint)
+	if err != nil {
+		fmt.Println(err)
+		err = deleteStartSession(client, *sess.SessionId)
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
+	}
+
+	return nil
+}
+
+func listInstances(client *ssm.SSM) (SsmInstances, error) {
+	input := &ssm.DescribeInstanceInformationInput{
+		MaxResults: aws.Int64(50),
+		Filters: []*ssm.InstanceInformationStringFilter{
+			{
+				Key:    aws.String("PingStatus"),
+				Values: []*string{aws.String("Online")},
+			},
+		},
+	}
+
+	instances, err := client.DescribeInstanceInformation(input)
+	if err != nil {
+		return nil, fmt.Errorf("Describe information: %v", err)
+	}
+
+	list := SsmInstances{}
+	for _, i := range instances.InstanceInformationList {
+
+		list = append(list, SsmInstance{
+			ComputerName:    *i.ComputerName,
+			InstanceID:      *i.InstanceId,
+			IPAddress:       *i.IPAddress,
+			AgentVersion:    *i.AgentVersion,
+			PlatformName:    *i.PlatformName,
+			PlatformVersion: *i.PlatformVersion,
+		})
+	}
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].ComputerName < list[j].ComputerName
+	})
+
+	return list, nil
+}
+
+func createStartSession(client *ssm.SSM, input *ssm.StartSessionInput) (*ssm.StartSessionOutput, string, error) {
+	subctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+
+	sess, err := client.StartSessionWithContext(subctx, input)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return sess, client.Endpoint, nil
+}
+
+func deleteStartSession(client *ssm.SSM, sessionId string) error {
+	fmt.Printf("\x1b[35mDelete Session:\x1b[0m %s\n", sessionId)
+
+	subctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	_, err := client.TerminateSessionWithContext(subctx, &ssm.TerminateSessionInput{SessionId: &sessionId})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -191,42 +279,6 @@ func SendCommand(profile, region, file, id, tag string, args []string) error {
 	}
 
 	return nil
-}
-
-func ListInstances(client *ssm.SSM) (SsmInstances, error) {
-	input := &ssm.DescribeInstanceInformationInput{
-		MaxResults: aws.Int64(50),
-		Filters: []*ssm.InstanceInformationStringFilter{
-			{
-				Key:    aws.String("PingStatus"),
-				Values: []*string{aws.String("Online")},
-			},
-		},
-	}
-
-	instances, err := client.DescribeInstanceInformation(input)
-	if err != nil {
-		return nil, fmt.Errorf("Describe information: %v", err)
-	}
-
-	list := SsmInstances{}
-	for _, i := range instances.InstanceInformationList {
-
-		list = append(list, SsmInstance{
-			ComputerName:    *i.ComputerName,
-			InstanceID:      *i.InstanceId,
-			IPAddress:       *i.IPAddress,
-			AgentVersion:    *i.AgentVersion,
-			PlatformName:    *i.PlatformName,
-			PlatformVersion: *i.PlatformVersion,
-		})
-	}
-
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].ComputerName < list[j].ComputerName
-	})
-
-	return list, nil
 }
 
 func (ssmi SsmInstances) ComputerName() []string {
