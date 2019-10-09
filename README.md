@@ -10,7 +10,7 @@ AWSリソース情報を取得するGolang製ツール
 go get github.com/sfuruya0612/snatch/cmd/snatch
 ```
 
-or git clone (default install to darwin)
+or git clone
 ``` sh
 git clone https://github.com/sfuruya0612/snatch
 make install
