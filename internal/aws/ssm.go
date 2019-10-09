@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"sort"
 	"strings"
 	"time"
@@ -78,14 +79,15 @@ func StartSession(profile, region string) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	// call session-manager-plugin
-	// plug := viper.GetString("plugin")
-	// err = callSubprocess(plug, string(sessJson), region, "StartSession", profile, string(paramsJson), endpoint)
-	fmt.Printf("\x1b[35mCreate Session:\x1b[0m %s\n", *sess.SessionId)
-	err = util.CallSubprocess("ssh", string(sessJson), "StartSession", string(paramsJson), endpoint)
+	plug, err := exec.LookPath("session-manager-plugin")
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	err = util.ExecCommand(plug, string(sessJson), region, "StartSession", profile, string(paramsJson), endpoint)
 	if err != nil {
 		fmt.Println(err)
-		err = deleteStartSession(client, *sess.SessionId)
+		err := deleteStartSession(client, *sess.SessionId)
 		if err != nil {
 			return fmt.Errorf("%s", err)
 		}
@@ -143,8 +145,6 @@ func createStartSession(client *ssm.SSM, input *ssm.StartSessionInput) (*ssm.Sta
 }
 
 func deleteStartSession(client *ssm.SSM, sessionId string) error {
-	fmt.Printf("\x1b[35mDelete Session:\x1b[0m %s\n", sessionId)
-
 	subctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 

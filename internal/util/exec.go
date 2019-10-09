@@ -1,13 +1,14 @@
 package util
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
 )
 
-func CallSubprocess(process string, args ...string) error {
+func ExecCommand(process string, args ...string) error {
 	call := exec.Command(process, args...)
 	call.Stderr = os.Stderr
 	call.Stdout = os.Stdout
@@ -29,7 +30,8 @@ func CallSubprocess(process string, args ...string) error {
 
 	err := call.Run()
 	if err != nil {
-		return err
+		return fmt.Errorf("%v", err)
 	}
+
 	return nil
 }
