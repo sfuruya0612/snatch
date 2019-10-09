@@ -3,53 +3,46 @@ package aws
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
 )
 
 type Record struct {
-	Id          string
-	Name        string
+	ZoneId      string
 	DomainName  string
 	Type        string
 	TTL         string
-	DomainValue []string
+	DomainValue string
 }
 
 type Records []Record
-
-type ListResourceRecordSetsInput struct {
-	HostedZoneId *string `location:"uri" locationName:"Id" type:"string" required:"true"`
-}
 
 func NewRoute53Sess(profile string, region string) *route53.Route53 {
 	sess := getSession(profile, region)
 	return route53.New(sess)
 }
 
-func ListHostedZones(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+func ListHostedZones(profile string, region string) error {
+	client := NewRoute53Sess(profile, region)
 
-	svc := NewRoute53Sess(profile, region)
-
-	res, err := svc.ListHostedZones(nil)
+	res, err := client.ListHostedZones(nil)
 	if err != nil {
 		return fmt.Errorf("List hostedzones sets: %v", err)
 	}
 
 	list := Records{}
 	for _, h := range res.HostedZones {
-		Id := h.Id
+		id := strings.Split(*h.Id, "/")
+		zoneid := id[2]
 
 		input := &route53.ListResourceRecordSetsInput{
-			HostedZoneId: Id,
+			HostedZoneId: h.Id,
 		}
 
-		rec, err := svc.ListResourceRecordSets(input)
+		rec, err := client.ListResourceRecordSets(input)
 		if err != nil {
 			return fmt.Errorf("List record sets: %v", err)
 		}
@@ -59,21 +52,23 @@ func ListHostedZones(c *cli.Context) error {
 			if r.TTL == nil {
 				r.TTL = aws.Int64(0000)
 			}
-
 			ttl := strconv.FormatInt(*r.TTL, 10)
 
-			var value []string
+			var value string
 			if r.AliasTarget == nil {
+				var values []string
+
 				for _, rr := range r.ResourceRecords {
-					value = append(value, *rr.Value)
+					values = append(values, *rr.Value)
 				}
+
+				value = strings.Join(values[:], ",")
 			} else if r.ResourceRecords == nil {
-				value = append(value, *r.AliasTarget.DNSName)
+				value = *r.AliasTarget.DNSName
 			}
 
 			list = append(list, Record{
-				Id:          *h.Id,
-				Name:        *h.Name,
+				ZoneId:      zoneid,
 				DomainName:  *r.Name,
 				Type:        *r.Type,
 				TTL:         ttl,
@@ -82,8 +77,7 @@ func ListHostedZones(c *cli.Context) error {
 		}
 	}
 	f := util.Formatln(
-		list.Id(),
-		list.Name(),
+		list.ZoneId(),
 		list.DomainName(),
 		list.Type(),
 		list.TTL(),
@@ -93,8 +87,7 @@ func ListHostedZones(c *cli.Context) error {
 	for _, i := range list {
 		fmt.Printf(
 			f,
-			i.Id,
-			i.Name,
+			i.ZoneId,
 			i.DomainName,
 			i.Type,
 			i.TTL,
@@ -104,20 +97,12 @@ func ListHostedZones(c *cli.Context) error {
 	return nil
 }
 
-func (rec Records) Id() []string {
-	id := []string{}
+func (rec Records) ZoneId() []string {
+	zid := []string{}
 	for _, i := range rec {
-		id = append(id, i.Id)
+		zid = append(zid, i.ZoneId)
 	}
-	return id
-}
-
-func (rec Records) Name() []string {
-	name := []string{}
-	for _, i := range rec {
-		name = append(name, i.Name)
-	}
-	return name
+	return zid
 }
 
 func (rec Records) DomainName() []string {
@@ -147,7 +132,7 @@ func (rec Records) TTL() []string {
 func (rec Records) DomainValue() []string {
 	dvalue := []string{}
 	for _, i := range rec {
-		dvalue = append(dvalue, i.DomainValue...)
+		dvalue = append(dvalue, i.DomainValue)
 	}
 	return dvalue
 }

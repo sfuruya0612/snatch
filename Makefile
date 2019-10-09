@@ -13,7 +13,7 @@ install:
 
 .PHONY: build
 build:
-	rm -rf build
+	-rm -rf build
 	mkdir build
 
 	GOOS=linux GOARGH=amd64 go build -ldflags "${LDFLAGS}" ${MODULE}
@@ -22,13 +22,13 @@ build:
 	GOOS=darwin GOARGH=amd64 go build -ldflags "${LDFLAGS}" ${MODULE}
 	zip build/${NAME}_darwin_amd64.zip ${NAME}
 
-	rm ${NAME}
+	@rm ${NAME}
 
-image:
+image: build
 	docker-compose build
 	docker images | grep snatch_cli
 
 clean:
 	-rm ${GOPATH}/bin/${NAME}
-	rm -rf build
-	docker rmi --force ${NAME}_cli
+	-rm -rf build
+	-docker rmi --force ${NAME}_cli

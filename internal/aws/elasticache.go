@@ -2,12 +2,12 @@ package aws
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
 )
 
 type CacheNode struct {
@@ -16,18 +16,18 @@ type CacheNode struct {
 	Engine             string
 	EngineVersion      string
 	CacheClusterStatus string
+	Status             string
+	Endpoint           string
+	Port               string
+	CacheClusterID     string
+	CacheNodeID        string
+	CurrentRole        string
 }
 
 type CacheNodes []CacheNode
 
 type GroupNode struct {
-	Name           string
-	Status         string
-	Endpoint       string
-	Port           string
-	CacheClusterId string
-	CacheNodeId    string
-	CurrentRole    string
+	Name string
 }
 
 type GroupNodes []GroupNode
@@ -37,10 +37,7 @@ func NewEcSess(profile string, region string) *elasticache.ElastiCache {
 	return elasticache.New(sess)
 }
 
-func DescribeCacheClusters(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
+func DescribeCacheClusters(profile string, region string) error {
 	svc := NewEcSess(profile, region)
 
 	res, err := svc.DescribeCacheClusters(nil)
@@ -66,6 +63,10 @@ func DescribeCacheClusters(c *cli.Context) error {
 		list.CacheClusterStatus(),
 	)
 
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Name < list[j].Name
+	})
+
 	for _, i := range list {
 		fmt.Printf(
 			f,
@@ -80,10 +81,7 @@ func DescribeCacheClusters(c *cli.Context) error {
 	return nil
 }
 
-func DescribeReplicationGroups(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
+func DescribeReplicationGroups(profile string, region string) error {
 	svc := NewEcSess(profile, region)
 
 	res, err := svc.DescribeReplicationGroups(nil)
@@ -91,7 +89,7 @@ func DescribeReplicationGroups(c *cli.Context) error {
 		return fmt.Errorf("Describe running nodes: %v", err)
 	}
 
-	list := GroupNodes{}
+	list := CacheNodes{}
 	var (
 		endpoint string
 		port     string
@@ -113,13 +111,13 @@ func DescribeReplicationGroups(c *cli.Context) error {
 					nm.CurrentRole = aws.String("NULL")
 				}
 
-				list = append(list, GroupNode{
+				list = append(list, CacheNode{
 					Name:           *i.ReplicationGroupId,
 					Status:         *i.Status,
 					Endpoint:       endpoint,
 					Port:           port,
-					CacheClusterId: *nm.CacheClusterId,
-					CacheNodeId:    *nm.CacheNodeId,
+					CacheClusterID: *nm.CacheClusterId,
+					CacheNodeID:    *nm.CacheNodeId,
 					CurrentRole:    *nm.CurrentRole,
 				})
 			}
@@ -131,10 +129,14 @@ func DescribeReplicationGroups(c *cli.Context) error {
 		list.Status(),
 		list.Endpoint(),
 		list.Port(),
-		list.CacheClusterId(),
-		list.CacheNodeId(),
+		list.CacheClusterID(),
+		list.CacheNodeID(),
 		list.CurrentRole(),
 	)
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Name < list[j].Name
+	})
 
 	for _, i := range list {
 		fmt.Printf(
@@ -143,8 +145,8 @@ func DescribeReplicationGroups(c *cli.Context) error {
 			i.Status,
 			i.Endpoint,
 			i.Port,
-			i.CacheClusterId,
-			i.CacheNodeId,
+			i.CacheClusterID,
+			i.CacheNodeID,
 			i.CurrentRole,
 		)
 	}
@@ -192,57 +194,49 @@ func (cn CacheNodes) CacheClusterStatus() []string {
 	return st
 }
 
-func (gn GroupNodes) Name() []string {
-	name := []string{}
-	for _, i := range gn {
-		name = append(name, i.Name)
-	}
-	return name
-}
-
-func (gn GroupNodes) Status() []string {
+func (cn CacheNodes) Status() []string {
 	st := []string{}
-	for _, i := range gn {
+	for _, i := range cn {
 		st = append(st, i.Status)
 	}
 	return st
 }
 
-func (gn GroupNodes) Endpoint() []string {
+func (cn CacheNodes) Endpoint() []string {
 	ep := []string{}
-	for _, i := range gn {
+	for _, i := range cn {
 		ep = append(ep, i.Endpoint)
 	}
 	return ep
 }
 
-func (gn GroupNodes) Port() []string {
+func (cn CacheNodes) Port() []string {
 	p := []string{}
-	for _, i := range gn {
+	for _, i := range cn {
 		p = append(p, i.Port)
 	}
 	return p
 }
 
-func (gn GroupNodes) CacheClusterId() []string {
+func (cn CacheNodes) CacheClusterID() []string {
 	cc := []string{}
-	for _, i := range gn {
-		cc = append(cc, i.CacheClusterId)
+	for _, i := range cn {
+		cc = append(cc, i.CacheClusterID)
 	}
 	return cc
 }
 
-func (gn GroupNodes) CacheNodeId() []string {
-	cn := []string{}
-	for _, i := range gn {
-		cn = append(cn, i.CacheNodeId)
+func (cn CacheNodes) CacheNodeID() []string {
+	cnid := []string{}
+	for _, i := range cn {
+		cnid = append(cnid, i.CacheNodeID)
 	}
-	return cn
+	return cnid
 }
 
-func (gn GroupNodes) CurrentRole() []string {
+func (cn CacheNodes) CurrentRole() []string {
 	cr := []string{}
-	for _, i := range gn {
+	for _, i := range cn {
 		cr = append(cr, i.CurrentRole)
 	}
 	return cr

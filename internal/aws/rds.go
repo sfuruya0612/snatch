@@ -2,11 +2,11 @@ package aws
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
 )
 
 type DbInstance struct {
@@ -21,18 +21,15 @@ type DbInstance struct {
 
 type DbInstances []DbInstance
 
-func NewRdsSess(profile string, region string) *rds.RDS {
+func newRdsSess(profile string, region string) *rds.RDS {
 	sess := getSession(profile, region)
 	return rds.New(sess)
 }
 
-func DescribeDBInstances(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+func DescribeDBInstances(profile string, region string) error {
+	rds := newRdsSess(profile, region)
 
-	svc := NewRdsSess(profile, region)
-
-	res, err := svc.DescribeDBInstances(nil)
+	res, err := rds.DescribeDBInstances(nil)
 	if err != nil {
 		return fmt.Errorf("Describe running instances: %v", err)
 	}
@@ -60,6 +57,10 @@ func DescribeDBInstances(c *cli.Context) error {
 		list.Endpoint(),
 		list.EndpointPort(),
 	)
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Name < list[j].Name
+	})
 
 	for _, i := range list {
 		fmt.Printf(

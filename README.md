@@ -1,8 +1,29 @@
 # snatch
-AWSリソース情報を取得するGolang製ツール(該当AWS CLI options：describe, event, ...)
+AWSリソース情報を取得するGolang製ツール  
 
+## Getting started
+* Go 1.11.x or later.
+* You need to set your $GOPATH and have $GOPATH/bin in your path.
 
-## Help
+### Install
+``` sh
+go get github.com/sfuruya0612/snatch/cmd/snatch
+```
+
+or git clone
+``` sh
+git clone https://github.com/sfuruya0612/snatch
+make install
+snatch -h
+```
+
+### Setting the tab completion
+``` sh
+printf '\n%s\n%s\n%s\n' '# for snatch autocomplete' "test -f ~/.snatch_$(basename $SHELL)_autocomplete || curl -LRsS https://raw.githubusercontent.com/urfave/cli/master/autocomplete/$(basename $SHELL)_autocomplete -o ~/.snatch_$(basename $SHELL)_autocomplete" "PROG=snatch source ~/.snatch_$(basename $SHELL)_autocomplete" >> "${HOME}/.$(basename $SHELL)rc"
+```
+
+## Usage
+
 ``` sh
 $ snatch -h
 NAME:
@@ -31,14 +52,9 @@ GLOBAL OPTIONS:
 
 ```
 
+## Testing
 
-## Install
-``` sh
-make install
-```
-
-
-# Docker run
+### Docker run(Testing linux ver)
 ``` sh
 make image
 docker-compose run cli snatch -p <value> <command>
