@@ -1,4 +1,4 @@
-package command
+package cmd
 
 import (
 	"fmt"
@@ -7,12 +7,11 @@ import (
 	"github.com/urfave/cli"
 )
 
-func ListEc2(c *cli.Context) error {
+func ListHostedZones(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
-	tag := c.String("tag")
 
-	err := aws.DescribeInstances(profile, region, tag)
+	err := aws.ListHostedZones(profile, region)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

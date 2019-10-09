@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sfuruya0612/snatch/cmd/snatch/command"
+	"github.com/sfuruya0612/snatch/cmd"
 	"github.com/urfave/cli"
 )
 
@@ -49,7 +49,7 @@ func New(date, hash, goversion string) *cli.App {
 		{
 			Name:   "ec2",
 			Usage:  "Get a list of EC2 resources. (API: DescribeInstances)",
-			Action: command.ListEc2,
+			Action: cmd.ListEc2,
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "tag, t",
@@ -60,44 +60,44 @@ func New(date, hash, goversion string) *cli.App {
 		{
 			Name:   "rds",
 			Usage:  "Get a list of RDS resources. (API: DescribeDbInstances)",
-			Action: command.ListRds,
+			Action: cmd.ListRds,
 		},
 		{
 			Name:   "ec",
 			Usage:  "Get a list of ElastiCache Cluster resources. (API: DescribeCacheClusters)",
-			Action: command.ListElasticache,
+			Action: cmd.ListElasticache,
 			Subcommands: []cli.Command{
 				{
 					Name:   "rg",
 					Usage:  "Get a list of ElastiCache Node resources. (API: DescribeReplicationGroups)",
-					Action: command.ListReplicationGroups,
+					Action: cmd.ListReplicationGroups,
 				},
 			},
 		},
 		{
 			Name:   "elb",
 			Usage:  "Get a list of ELB(Classic) resources. (API: DescribeLoadBalancers)",
-			Action: command.ListElb,
+			Action: cmd.ListElb,
 		},
 		{
 			Name:   "elbv2",
 			Usage:  "Get a list of ELB(Application & Network) resources. (API: DescribeLoadBalancers)",
-			Action: command.ListElbv2,
+			Action: cmd.ListElbv2,
 		},
 		{
 			Name:   "route53",
 			Usage:  "Get a list of Rotue53 Record resources. (API: ListHostedZones and ListResourceRecordSets)",
-			Action: command.ListHostedZones,
+			Action: cmd.ListHostedZones,
 		},
 		{
 			Name:   "ssm",
 			Usage:  "Start a session on your instances by launching bash or shell terminal. (API: StartSession)",
-			Action: command.StartSession,
+			Action: cmd.StartSession,
 			Subcommands: []cli.Command{
 				{
 					Name:   "run",
 					Usage:  "Runs commands on one target instance. (API: SendCommand)",
-					Action: command.SendCommand,
+					Action: cmd.SendCommand,
 					Flags: []cli.Flag{
 						cli.StringFlag{
 							Name:  "file, f",

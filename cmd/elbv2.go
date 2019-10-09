@@ -1,4 +1,4 @@
-package command
+package cmd
 
 import (
 	"fmt"
@@ -7,11 +7,11 @@ import (
 	"github.com/urfave/cli"
 )
 
-func ListElb(c *cli.Context) error {
+func ListElbv2(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	err := aws.DescribeLoadBalancers(profile, region)
+	err := aws.DescribeLoadBalancersv2(profile, region)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

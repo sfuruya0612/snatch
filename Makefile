@@ -4,7 +4,7 @@ GOVERSION := $(shell go version)
 LDFLAGS := -X 'main.date=${DATE}' -X 'main.hash=${HASH}' -X 'main.goversion=${GOVERSION}'
 
 NAME := snatch
-MODULE := github.com/sfuruya0612/${NAME}/cmd/${NAME}
+MODULE := github.com/sfuruya0612/${NAME}
 
 install:
 	-rm ${GOPATH}/bin/${NAME}
