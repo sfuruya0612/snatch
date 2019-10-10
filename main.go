@@ -27,7 +27,7 @@ func New(date, hash, goversion string) *cli.App {
 	app := cli.NewApp()
 
 	app.Name = "snatch"
-	app.Usage = "This is the cli command to get and display Amazon Web Services resources."
+	app.Usage = "Cli command to get and display Amazon Web Services resources."
 	app.Version = fmt.Sprintf("%s %s (Build by: %s)", date, hash, goversion)
 	app.EnableBashCompletion = true
 
@@ -88,6 +88,11 @@ func New(date, hash, goversion string) *cli.App {
 			Name:   "route53",
 			Usage:  "Get a list of Rotue53 Record resources. (API: ListHostedZones and ListResourceRecordSets)",
 			Action: cmd.ListHostedZones,
+		},
+		{
+			Name:   "acm",
+			Usage:  "Get a list of ACM resources. (API: )",
+			Action: cmd.ListCertificates,
 		},
 		{
 			Name:   "ssm",

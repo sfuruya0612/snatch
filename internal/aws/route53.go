@@ -94,6 +94,7 @@ func ListHostedZones(profile string, region string) error {
 			i.DomainValue,
 		)
 	}
+
 	return nil
 }
 

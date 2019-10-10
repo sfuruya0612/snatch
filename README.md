@@ -1,8 +1,12 @@
 # snatch
-AWSリソース情報を取得するGolang製ツール  
+Cli command to get and display Amazon Web Services resources.  
+This tool allows cli to retrieve the necessary contents without logging into the Management console.  
+The concept is that you can continue working without leaving the black screen (Terminal software).  
 
 ## Getting started
-* Go 1.11.x or later.
+
+### Required
+* Go version 1.11.x or later.
 * You need to set your $GOPATH and have $GOPATH/bin in your path.
 
 ### Install
@@ -12,9 +16,8 @@ go get github.com/sfuruya0612/snatch
 
 or git clone
 ``` sh
-git clone https://github.com/sfuruya0612/snatch
+git clone https://github.com/sfuruya0612/snatch.git
 make install
-snatch -h
 ```
 
 ### Setting the tab completion
@@ -54,7 +57,7 @@ GLOBAL OPTIONS:
 
 ## Testing
 
-### Docker run(Testing linux ver)
+### Docker run (Testing linux version)
 ``` sh
 make image
 docker-compose run cli snatch -p <value> <command>
