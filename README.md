@@ -1,6 +1,6 @@
 # snatch
 
-![Go Report Card](https://goreportcard.com/badge/github.com/sfuruya0612/snatch?style=flat-square)  
+<a href="https://goreportcard.com/report/github.com/sfuruya0612/snatch"><img src="https://goreportcard.com/badge/github.com/sfuruya0612/snatch" alt="Go Report Card"/></a>
 
 Cli command to get and display Amazon Web Services resources.  
 This tool allows cli to retrieve the necessary contents without logging into the Management console.  
@@ -33,13 +33,13 @@ printf '\n%s\n%s\n%s\n' '# for snatch autocomplete' "test -f ~/.snatch_$(basenam
 ``` sh
 $ snatch -h
 NAME:
-   snatch - This is the cli command to get and display Amazon Web Services resources.
+   snatch - Cli command to get and display Amazon Web Services resources.
 
 USAGE:
    snatch [global options] command [command options] [arguments...]
 
 VERSION:
-   20191009-18:04:21 3f047a79 (Build by: go version go1.12.5 darwin/amd64)
+   20191011-11:36:07 0ae46416 (Build by: go version go1.12.5 darwin/amd64)
 
 COMMANDS:
      ec2      Get a list of EC2 resources. (API: DescribeInstances)
@@ -48,6 +48,8 @@ COMMANDS:
      elb      Get a list of ELB(Classic) resources. (API: DescribeLoadBalancers)
      elbv2    Get a list of ELB(Application & Network) resources. (API: DescribeLoadBalancers)
      route53  Get a list of Rotue53 Record resources. (API: ListHostedZones and ListResourceRecordSets)
+     acm      Get a list of ACM resources. (API: ListCertificates and DescribeCertificate)
+     s3       Get Objects in selected S3 Bucket at interactive prompt. (API: ListBuckets and ListObjects)
      ssm      Start a session on your instances by launching bash or shell terminal. (API: StartSession)
      help, h  Shows a list of commands or help for one command
 

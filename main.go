@@ -91,8 +91,13 @@ func New(date, hash, goversion string) *cli.App {
 		},
 		{
 			Name:   "acm",
-			Usage:  "Get a list of ACM resources. (API: )",
+			Usage:  "Get a list of ACM resources. (API: ListCertificates and DescribeCertificate)",
 			Action: cmd.ListCertificates,
+		},
+		{
+			Name:   "s3",
+			Usage:  "Get Objects in selected S3 Bucket at interactive prompt. (API: ListBuckets and ListObjects)",
+			Action: cmd.ListBuckets,
 		},
 		{
 			Name:   "ssm",
@@ -121,5 +126,6 @@ func New(date, hash, goversion string) *cli.App {
 			},
 		},
 	}
+
 	return app
 }
