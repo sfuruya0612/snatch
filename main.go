@@ -125,6 +125,17 @@ func New(date, hash, goversion string) *cli.App {
 				},
 			},
 		},
+		{
+			Name:   "logs",
+			Usage:  "Display messages for selected log groups and streams at interactive prompt. (API: )",
+			Action: cmd.DescribeLogGroups,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "f",
+					Usage: "Like `tail -f`.",
+				},
+			},
+		},
 	}
 
 	return app

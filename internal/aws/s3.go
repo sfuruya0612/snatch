@@ -33,9 +33,9 @@ func ListBuckets(profile string, region string) error {
 
 	elements := []string{}
 	for _, r := range res.Buckets {
-		buckets := *r.Name
+		item := *r.Name
 
-		elements = append(elements, buckets)
+		elements = append(elements, item)
 	}
 
 	bucket, err := util.Prompt(elements, "Select Bucket")
@@ -52,8 +52,6 @@ func ListBuckets(profile string, region string) error {
 }
 
 func ListObjects(client *s3.S3, bucket string) error {
-	fmt.Println(bucket)
-
 	input := &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucket),
 	}
