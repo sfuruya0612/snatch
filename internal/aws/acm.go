@@ -18,13 +18,13 @@ type Certificate struct {
 
 type Certificates []Certificate
 
-func NewAcmSess(profile string, region string) *acm.ACM {
+func newAcmSess(profile string, region string) *acm.ACM {
 	sess := getSession(profile, region)
 	return acm.New(sess)
 }
 
 func ListCertificates(profile string, region string) error {
-	client := NewAcmSess(profile, region)
+	client := newAcmSess(profile, region)
 
 	res, err := client.ListCertificates(nil)
 	if err != nil {

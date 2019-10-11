@@ -32,13 +32,13 @@ type GroupNode struct {
 
 type GroupNodes []GroupNode
 
-func NewEcSess(profile string, region string) *elasticache.ElastiCache {
+func newElasticacheSess(profile string, region string) *elasticache.ElastiCache {
 	sess := getSession(profile, region)
 	return elasticache.New(sess)
 }
 
 func DescribeCacheClusters(profile string, region string) error {
-	svc := NewEcSess(profile, region)
+	svc := newElasticacheSess(profile, region)
 
 	res, err := svc.DescribeCacheClusters(nil)
 	if err != nil {
@@ -82,7 +82,7 @@ func DescribeCacheClusters(profile string, region string) error {
 }
 
 func DescribeReplicationGroups(profile string, region string) error {
-	svc := NewEcSess(profile, region)
+	svc := newElasticacheSess(profile, region)
 
 	res, err := svc.DescribeReplicationGroups(nil)
 	if err != nil {

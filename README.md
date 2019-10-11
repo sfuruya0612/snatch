@@ -1,4 +1,7 @@
 # snatch
+
+![Go Report Card](https://goreportcard.com/badge/github.com/sfuruya0612/snatch?style=flat-square)  
+
 Cli command to get and display Amazon Web Services resources.  
 This tool allows cli to retrieve the necessary contents without logging into the Management console.  
 The concept is that you can continue working without leaving the black screen (Terminal software).  

@@ -109,7 +109,7 @@ func listInstances(client *ssm.SSM) (SsmInstances, error) {
 
 	instances, err := client.DescribeInstanceInformation(input)
 	if err != nil {
-		return nil, fmt.Errorf("Describe information: %v", err)
+		return nil, fmt.Errorf("Describe instance information: %v", err)
 	}
 
 	list := SsmInstances{}
