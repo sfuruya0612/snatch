@@ -102,6 +102,36 @@ func DescribeInstances(profile, region, tag string) error {
 	return nil
 }
 
+func getInstanceNameByInstanceIds(profile, region string, ids []string) ([]string, error) {
+	client := newEc2Sess(profile, region)
+
+	input := &ec2.DescribeInstancesInput{
+		InstanceIds: aws.StringSlice(ids),
+	}
+
+	res, err := client.DescribeInstances(input)
+	if err != nil {
+		return nil, fmt.Errorf("Describe instances by instance ids: %v", err)
+	}
+
+	names := []string{}
+	for _, r := range res.Reservations {
+		for _, i := range r.Instances {
+
+			var tag_name string
+			for _, t := range i.Tags {
+				if *t.Key == "Name" {
+					tag_name = *t.Value
+				}
+			}
+
+			names = append(names, tag_name)
+		}
+	}
+
+	return names, nil
+}
+
 func (ins Instances) Name() []string {
 	name := []string{}
 	for _, i := range ins {

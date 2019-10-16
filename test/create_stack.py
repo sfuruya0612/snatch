@@ -4,7 +4,6 @@ import glob
 import os
 import re
 import sys
-import shutil
 import logging
 from boto3.session import Session
 from botocore.exceptions import ClientError
@@ -60,11 +59,11 @@ class CreateStack:
                 logger.info("%s KeyPair Created.", app_name)
 
                 private_key = res["KeyMaterial"]
-                pem_file = open(os.environ["HOME"] + "/.ssh/pems/" + app_name + ".pem", "w")
+                pem_file = open(os.environ["HOME"] + "/.ssh/" + app_name + ".pem", "w")
                 pem_file.write(private_key)
                 pem_file.close
 
-                os.chmod(os.environ["HOME"] + "/.ssh/pems/" + app_name + ".pem", 0o600)
+                os.chmod(os.environ["HOME"] + "/.ssh/" + app_name + ".pem", 0o600)
             else:
                 logger.warning("%s", e.response["Error"]["Message"])
                 sys.exit(1)

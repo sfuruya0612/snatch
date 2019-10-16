@@ -37,7 +37,7 @@ clean:
 	-docker rmi --force ${NAME}_cli
 
 create_stack:
-	python test/create_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION}
+	python test/create_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
 
 delete_stack:
-	python test/delete_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION}
+	python test/delete_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &

@@ -17,7 +17,7 @@ import (
 
 type SsmInstance struct {
 	ComputerName    string
-	InstanceID      string
+	InstanceId      string
 	IPAddress       string
 	AgentVersion    string
 	PlatformName    string
@@ -47,10 +47,13 @@ func StartSession(profile, region string) error {
 
 	elements := []string{}
 	for _, i := range list {
-		item := i.InstanceID
+		// item := i.ComputerName + "(" + i.InstanceId + ")\t" + i.IPAddress + "\t" + i.AgentVersion + "\t" + i.PlatformName + ":" + i.PlatformVersion
+		item := i.InstanceId
 
 		elements = append(elements, item)
 	}
+
+	// names, err := getInstanceNameByInstanceIds(profile, region, elements)
 
 	instance, err := util.Prompt(elements, "Select Instance")
 	if err != nil {
@@ -86,7 +89,7 @@ func StartSession(profile, region string) error {
 		fmt.Println(err)
 		err := deleteStartSession(client, *sess.SessionId)
 		if err != nil {
-			return fmt.Errorf("%s", err)
+			return fmt.Errorf("%v", err)
 		}
 	}
 
@@ -104,22 +107,24 @@ func listInstances(client *ssm.SSM) (SsmInstances, error) {
 		},
 	}
 
-	instances, err := client.DescribeInstanceInformation(input)
-	if err != nil {
-		return nil, fmt.Errorf("Describe instance information: %v", err)
+	list := SsmInstances{}
+	output := func(page *ssm.DescribeInstanceInformationOutput, lastPage bool) bool {
+		for _, i := range page.InstanceInformationList {
+			list = append(list, SsmInstance{
+				ComputerName:    *i.ComputerName,
+				InstanceId:      *i.InstanceId,
+				IPAddress:       *i.IPAddress,
+				AgentVersion:    *i.AgentVersion,
+				PlatformName:    *i.PlatformName,
+				PlatformVersion: *i.PlatformVersion,
+			})
+		}
+		return true
 	}
 
-	list := SsmInstances{}
-	for _, i := range instances.InstanceInformationList {
-
-		list = append(list, SsmInstance{
-			ComputerName:    *i.ComputerName,
-			InstanceID:      *i.InstanceId,
-			IPAddress:       *i.IPAddress,
-			AgentVersion:    *i.AgentVersion,
-			PlatformName:    *i.PlatformName,
-			PlatformVersion: *i.PlatformVersion,
-		})
+	err := client.DescribeInstanceInformationPages(input, output)
+	if err != nil {
+		return nil, fmt.Errorf("Describe instance information: %v", err)
 	}
 
 	sort.Slice(list, func(i, j int) bool {
@@ -286,10 +291,10 @@ func (ssmi SsmInstances) ComputerName() []string {
 	return cname
 }
 
-func (ssmi SsmInstances) InstanceID() []string {
+func (ssmi SsmInstances) InstanceId() []string {
 	id := []string{}
 	for _, i := range ssmi {
-		id = append(id, i.InstanceID)
+		id = append(id, i.InstanceId)
 	}
 	return id
 }

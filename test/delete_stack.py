@@ -62,6 +62,8 @@ class DeleteStack:
                 KeyName= app_name,
             )
 
+            os.remove(os.environ["HOME"] + "/.ssh/" + app_name + ".pem")
+
             logger.info("%s KeyPair delete complete.", app_name)
 
         except ClientError as e:
