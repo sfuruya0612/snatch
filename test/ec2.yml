@@ -1,0 +1,337 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Testing
+
+Parameters:
+  AppName:
+    Type: String
+    Default: "snatch"
+    Description: ""
+  Env:
+    Type: String
+    Default: "test"
+    Description: ""
+  ImageId:
+    Type: "AWS::EC2::Image::Id"
+    Default: "ami-0cd744adeca97abb1"
+    Description: "Ubuntu Server 18.04 LTS (HVM), SSD Volume Type"
+  InstanceType:
+    Type: String
+    Default: t3.small
+    Description: ""
+  InstanceNum:
+    Type: String
+    Default: 2
+    Description: ""
+
+Resources:
+  # VPC
+  Vpc:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      InstanceTenancy: default
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-vpc"
+
+  # subnets
+  SubnetPub1a:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: ap-northeast-1a
+      CidrBlock: "10.0.0.0/25"
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-pub-1a-subnet"
+  SubnetPub1c:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: ap-northeast-1c
+      CidrBlock: "10.0.1.0/25"
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-pub-1c-subnet"
+  SubnetPub1d:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: ap-northeast-1d
+      CidrBlock: "10.0.2.0/25"
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-pub-1d-subnet"
+  SubnetPri1a:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: ap-northeast-1a
+      CidrBlock: "10.0.0.128/25"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-pri-1a-subnet"
+  SubnetPri1c:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: ap-northeast-1c
+      CidrBlock: "10.0.1.128/25"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-pri-1c-subnet"
+  SubnetPri1d:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: ap-northeast-1d
+      CidrBlock: "10.0.2.128/25"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-pri-1d-subnet"
+
+  # InternetGateway
+  Igw:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-igw"
+  Gw:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref Igw
+
+  # DHCP
+  Dopt:
+    Type: "AWS::EC2::DHCPOptions"
+    Properties:
+      DomainName: ap-northeast-1.compute.internal
+      DomainNameServers:
+        - AmazonProvidedDNS
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-dopt"
+  DhcpAssoc:
+    Type: "AWS::EC2::VPCDHCPOptionsAssociation"
+    Properties:
+      VpcId: !Ref Vpc
+      DhcpOptionsId: !Ref Dopt
+
+  # Network acl
+  NetworkAcl:
+    Type: "AWS::EC2::NetworkAcl"
+    Properties:
+      VpcId: !Ref Vpc
+  Acl1:
+    Type: "AWS::EC2::NetworkAclEntry"
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Egress: true
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NetworkAcl
+  Acl2:
+    Type: "AWS::EC2::NetworkAclEntry"
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NetworkAcl
+
+  # Subnet acl
+  SubnetAcl1:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+       NetworkAclId: !Ref NetworkAcl
+       SubnetId: !Ref SubnetPub1a
+  SubnetAcl2:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+       NetworkAclId: !Ref NetworkAcl
+       SubnetId: !Ref SubnetPub1c
+  SubnetAcl3:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+      NetworkAclId: !Ref NetworkAcl
+      SubnetId: !Ref SubnetPub1d
+  SubnetAcl4:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+       NetworkAclId: !Ref NetworkAcl
+       SubnetId: !Ref SubnetPri1a
+  SubnetAcl5:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+       NetworkAclId: !Ref NetworkAcl
+       SubnetId: !Ref SubnetPri1c
+  SubnetAcl6:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+      NetworkAclId: !Ref NetworkAcl
+      SubnetId: !Ref SubnetPri1d
+
+  # Route table
+  RtbPub:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-pub-rtb"
+  RtbPri:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-pri-rtb"
+
+  # Subnet route table
+  SubnetRoute1:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RtbPub
+      SubnetId: !Ref SubnetPub1a
+  SubnetRoute2:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RtbPub
+      SubnetId: !Ref SubnetPub1c
+  SubnetRoute3:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RtbPub
+      SubnetId: !Ref SubnetPub1d
+  SubnetRoute4:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RtbPri
+      SubnetId: !Ref SubnetPri1a
+  SubnetRoute5:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RtbPri
+      SubnetId: !Ref SubnetPri1c
+  SubnetRoute6:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RtbPri
+      SubnetId: !Ref SubnetPri1d
+
+  # Routing
+  Route:
+    Type: "AWS::EC2::Route"
+    DependsOn: Gw
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref RtbPub
+      GatewayId: !Ref Igw
+
+  # IAM Role
+  Role:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      RoleName: !Sub "${AppName}-${Env}-iam-role"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+  InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref Role
+
+  # SecurityGroup
+  SecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Allow ssh(22)"
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: 22
+          ToPort: 22
+          CidrIp: "0.0.0.0/0"
+
+  # LaunchTemplate
+  LaunchTemplate:
+    Type: "AWS::EC2::LaunchTemplate"
+    Properties:
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: "/dev/sda1"
+            Ebs:
+              DeleteOnTermination: true
+              VolumeType: "gp2"
+              VolumeSize: 30
+        IamInstanceProfile:
+          Arn: !GetAtt InstanceProfile.Arn
+        ImageId: !Ref ImageId
+        InstanceType: !Ref InstanceType
+        KeyName: !Ref AppName
+        SecurityGroupIds:
+          - !Ref SecurityGroup
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/sh -x
+
+            apt update && apt upgrade -y
+            snap install amazon-ssm-agent --classic
+
+            reboot
+
+  # AutoScalingGroup
+  AutoScalingGroup:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - ap-northeast-1a
+        - ap-northeast-1c
+        - ap-northeast-1d
+      Cooldown: "60"
+      DesiredCapacity: !Ref InstanceNum
+      HealthCheckGracePeriod: 60
+      HealthCheckType: "EC2"
+      MaxSize: !Ref InstanceNum
+      MetricsCollection:
+        - Granularity: "1Minute"
+      MinSize: !Ref InstanceNum
+      MixedInstancesPolicy:
+        InstancesDistribution:
+          OnDemandPercentageAboveBaseCapacity: 0
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref LaunchTemplate
+            Version: "1"
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-pub-ec2"
+          PropagateAtLaunch: true
+      TerminationPolicies:
+        - OldestInstance
+      VPCZoneIdentifier:
+        - !Ref SubnetPub1a
+        - !Ref SubnetPub1c
+        - !Ref SubnetPub1d

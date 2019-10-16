@@ -8,6 +8,8 @@ import (
 	"github.com/urfave/cli"
 )
 
+const version = "19.10.1"
+
 var (
 	date      string
 	hash      string
@@ -26,10 +28,16 @@ func main() {
 func New(date, hash, goversion string) *cli.App {
 	app := cli.NewApp()
 
+	app.EnableBashCompletion = true
+
 	app.Name = "snatch"
 	app.Usage = "Cli command to get and display Amazon Web Services resources."
-	app.Version = fmt.Sprintf("%s %s (Build by: %s)", date, hash, goversion)
-	app.EnableBashCompletion = true
+
+	if date != "" || hash != "" || goversion != "" {
+		app.Version = fmt.Sprintf("%s %s (Build by: %s)", date, hash, goversion)
+	} else {
+		app.Version = version
+	}
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{

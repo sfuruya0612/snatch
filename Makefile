@@ -6,6 +6,9 @@ LDFLAGS := -X 'main.date=${DATE}' -X 'main.hash=${HASH}' -X 'main.goversion=${GO
 NAME := snatch
 MODULE := github.com/sfuruya0612/${NAME}
 
+AWS_PROFILE := default
+REGION := ap-northeast-1
+
 install:
 	-rm ${GOPATH}/bin/${NAME}
 	go mod tidy
@@ -32,3 +35,9 @@ clean:
 	-rm ${GOPATH}/bin/${NAME}
 	-rm -rf build
 	-docker rmi --force ${NAME}_cli
+
+create_stack:
+	python test/create_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION}
+
+delete_stack:
+	python test/delete_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION}
