@@ -11,10 +11,10 @@ import (
 
 type Instance struct {
 	Name             string
-	InstanceID       string
+	InstanceId       string
 	InstanceType     string
-	PrivateIPAddress string
-	PublicIPAddress  string
+	PrivateIpAddress string
+	PublicIpAddress  string
 	State            string
 	KeyName          string
 	AvailabilityZone string
@@ -60,10 +60,10 @@ func DescribeInstances(profile, region, tag string) error {
 
 			list = append(list, Instance{
 				Name:             tag_name,
-				InstanceID:       *i.InstanceId,
+				InstanceId:       *i.InstanceId,
 				InstanceType:     *i.InstanceType,
-				PrivateIPAddress: *i.PrivateIpAddress,
-				PublicIPAddress:  *i.PublicIpAddress,
+				PrivateIpAddress: *i.PrivateIpAddress,
+				PublicIpAddress:  *i.PublicIpAddress,
 				State:            *i.State.Name,
 				KeyName:          *i.KeyName,
 				AvailabilityZone: *i.Placement.AvailabilityZone,
@@ -72,10 +72,10 @@ func DescribeInstances(profile, region, tag string) error {
 	}
 	f := util.Formatln(
 		list.Name(),
-		list.InstanceID(),
+		list.InstanceId(),
 		list.InstanceType(),
-		list.PrivateIPAddress(),
-		list.PublicIPAddress(),
+		list.PrivateIpAddress(),
+		list.PublicIpAddress(),
 		list.State(),
 		list.KeyName(),
 		list.AvailabilityZone(),
@@ -89,10 +89,10 @@ func DescribeInstances(profile, region, tag string) error {
 		fmt.Printf(
 			f,
 			i.Name,
-			i.InstanceID,
+			i.InstanceId,
 			i.InstanceType,
-			i.PrivateIPAddress,
-			i.PublicIPAddress,
+			i.PrivateIpAddress,
+			i.PublicIpAddress,
 			i.State,
 			i.KeyName,
 			i.AvailabilityZone,
@@ -102,7 +102,7 @@ func DescribeInstances(profile, region, tag string) error {
 	return nil
 }
 
-func getInstanceNameByInstanceIds(profile, region string, ids []string) ([]string, error) {
+func getInstancesByInstanceIds(profile, region string, ids []string) (Instances, error) {
 	client := newEc2Sess(profile, region)
 
 	input := &ec2.DescribeInstancesInput{
@@ -114,7 +114,7 @@ func getInstanceNameByInstanceIds(profile, region string, ids []string) ([]strin
 		return nil, fmt.Errorf("Describe instances by instance ids: %v", err)
 	}
 
-	names := []string{}
+	list := Instances{}
 	for _, r := range res.Reservations {
 		for _, i := range r.Instances {
 
@@ -125,11 +125,17 @@ func getInstanceNameByInstanceIds(profile, region string, ids []string) ([]strin
 				}
 			}
 
-			names = append(names, tag_name)
+			list = append(list, Instance{
+				Name:       tag_name,
+				InstanceId: *i.InstanceId,
+			})
 		}
 	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Name < list[j].Name
+	})
 
-	return names, nil
+	return list, nil
 }
 
 func (ins Instances) Name() []string {
@@ -140,10 +146,10 @@ func (ins Instances) Name() []string {
 	return name
 }
 
-func (ins Instances) InstanceID() []string {
+func (ins Instances) InstanceId() []string {
 	id := []string{}
 	for _, i := range ins {
-		id = append(id, i.InstanceID)
+		id = append(id, i.InstanceId)
 	}
 	return id
 }
@@ -156,18 +162,18 @@ func (ins Instances) InstanceType() []string {
 	return ty
 }
 
-func (ins Instances) PrivateIPAddress() []string {
+func (ins Instances) PrivateIpAddress() []string {
 	pip := []string{}
 	for _, i := range ins {
-		pip = append(pip, i.PrivateIPAddress)
+		pip = append(pip, i.PrivateIpAddress)
 	}
 	return pip
 }
 
-func (ins Instances) PublicIPAddress() []string {
+func (ins Instances) PublicIpAddress() []string {
 	gip := []string{}
 	for _, i := range ins {
-		gip = append(gip, i.PublicIPAddress)
+		gip = append(gip, i.PublicIpAddress)
 	}
 	return gip
 }

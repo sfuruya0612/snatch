@@ -2,8 +2,9 @@ package util
 
 import (
 	"fmt"
-	"github.com/manifoldco/promptui"
 	"strings"
+
+	"github.com/manifoldco/promptui"
 )
 
 func Prompt(elements []string, label string) (string, error) {
