@@ -12,19 +12,23 @@ The concept is that you can continue working without leaving the black screen (T
 ### Required
 * Go version 1.11.x or later.
 * You need to set your $GOPATH and have $GOPATH/bin in your path.
+* Supported OS.
+  * MacOS
+  * Linux
 
 ### Install
-``` sh
-go get github.com/sfuruya0612/snatch
-```
 
-or git clone
 ``` sh
+# go get
+go get github.com/sfuruya0612/snatch
+
+# git clone
 git clone https://github.com/sfuruya0612/snatch.git
 make install
 ```
 
-### Setting the tab completion
+#### Setting the tab completion
+
 ``` sh
 printf '\n%s\n%s\n%s\n' '# for snatch autocomplete' "test -f ~/.snatch_$(basename $SHELL)_autocomplete || curl -LRsS https://raw.githubusercontent.com/urfave/cli/master/autocomplete/$(basename $SHELL)_autocomplete -o ~/.snatch_$(basename $SHELL)_autocomplete" "PROG=snatch source ~/.snatch_$(basename $SHELL)_autocomplete" >> "${HOME}/.$(basename $SHELL)rc"
 ```
@@ -40,7 +44,7 @@ USAGE:
    snatch [global options] command [command options] [arguments...]
 
 VERSION:
-   20191011-11:36:07 0ae46416 (Build by: go version go1.12.5 darwin/amd64)
+   19.10.1
 
 COMMANDS:
      ec2      Get a list of EC2 resources. (API: DescribeInstances)
@@ -63,8 +67,33 @@ GLOBAL OPTIONS:
 
 ## Testing
 
-### Docker run (Testing linux version)
+#### Linux version by Docker
+
 ``` sh
 make image
-docker-compose run cli snatch -p <value> <command>
+docker-compose run cli snatch <command>
+```
+
+#### Functional test
+
+##### Create resource
+*Runs on the back end*  
+
+* EC2 Instances(SpotInstance)
+
+``` sh
+make create_stack
+
+# Execute snatch commands
+# e.g.
+snatch ec2
+snatch ssm
+snatch ssm run -t <tag>
+```
+
+##### Delete resources
+*Runs on the back end*  
+
+``` sh
+make delete_stack
 ```

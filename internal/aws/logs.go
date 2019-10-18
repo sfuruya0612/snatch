@@ -43,7 +43,7 @@ func DescribeLogGroups(profile, region string, flag bool) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	err = DescribeLogStreams(client, group, flag)
+	err = describeLogStreams(client, group, flag)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
@@ -51,7 +51,7 @@ func DescribeLogGroups(profile, region string, flag bool) error {
 	return nil
 }
 
-func DescribeLogStreams(client *logs.CloudWatchLogs, group string, flag bool) error {
+func describeLogStreams(client *logs.CloudWatchLogs, group string, flag bool) error {
 	input := &logs.DescribeLogStreamsInput{
 		LogGroupName: aws.String(group),
 	}
