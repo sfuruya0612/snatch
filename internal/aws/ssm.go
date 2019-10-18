@@ -45,12 +45,8 @@ func StartSession(profile, region string) error {
 		item := i.Name + "\t" + i.InstanceId
 		elements = append(elements, item)
 	}
-	e := util.FormatSlice(elements)
-	for _, ee := range e {
-		fmt.Println(ee)
-	}
 
-	instance, err := util.Prompt(e, "Select Instance")
+	instance, err := util.Prompt(elements, "Select Instance")
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

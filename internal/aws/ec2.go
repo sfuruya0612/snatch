@@ -3,6 +3,7 @@ package aws
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -28,9 +29,23 @@ func newEc2Sess(profile string, region string) *ec2.EC2 {
 }
 
 func DescribeInstances(profile, region, tag string) error {
-	ec2 := newEc2Sess(profile, region)
+	client := newEc2Sess(profile, region)
 
-	res, err := ec2.DescribeInstances(nil)
+	input := &ec2.DescribeInstancesInput{}
+
+	if tag != "" {
+		spl := strings.Split(tag, ":")
+		if len(spl) == 0 {
+			return fmt.Errorf("parse tag=%s", tag)
+		}
+
+		input.Filters = append(input.Filters, &ec2.Filter{
+			Name:   aws.String("tag:" + spl[0]),
+			Values: []*string{aws.String(spl[1])},
+		})
+	}
+
+	res, err := client.DescribeInstances(input)
 	if err != nil {
 		return fmt.Errorf("Describe running instances: %v", err)
 	}
