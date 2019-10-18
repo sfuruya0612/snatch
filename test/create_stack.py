@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO, format=formatter)
 
 class CreateStack:
 
-    # Option parser
+    # Option parser.
     def get_option(self):
         usage = "python " + sys.argv[0] + " [-h | --help] [-a | --app <APP_NAME>] [-p | --profile <AWS_PROFILE>] [-r | --region <AWS_REGION>]"
         argparser = ArgumentParser(usage=usage)
@@ -35,7 +35,7 @@ class CreateStack:
         return argparser.parse_args()
 
     # Create EC2 keypair.
-    # 秘密鍵は ~/.ssh/pems/ 配下に書き出す(file permission: 0600)
+    # 秘密鍵は ~/.ssh/ 配下に書き出す(file permission: 0600)
     def create_keypair(self, app_name, session):
         logger.info("Create %s KeyPair.", app_name)
 

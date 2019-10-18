@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format=formatter)
 
 class DeleteStack:
 
-    # Option parser
+    # Option parser.
     def get_option(self):
         usage = "python " + sys.argv[0] + " [-h | --help] [-a | --app <APP_NAME>] [-p | --profile <AWS_PROFILE>] [-r | --region <AWS_REGION>]"
         argparser = ArgumentParser(usage=usage)
@@ -30,6 +30,7 @@ class DeleteStack:
                                help="AWs regions. e.g. ap-northeast-1, us-east-1, ...")
         return argparser.parse_args()
 
+    # Delete stack.
     def delete_stack(self, app_name, session):
         cfn = session.client("cloudformation")
         waiter = cfn.get_waiter("stack_delete_complete")
@@ -52,6 +53,8 @@ class DeleteStack:
             logger.warning("%s", e.response["Error"]["Message"])
             sys.exit(1)
 
+    # Delete EC2 keypair.
+    # ~/.ssh/ 配下に書き出したファイルも削除している
     def delete_keypair(self, app_name, session):
         logger.info("Delete %s KeyPair.", app_name)
 
