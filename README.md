@@ -24,6 +24,7 @@ go get github.com/sfuruya0612/snatch
 
 # git clone
 git clone https://github.com/sfuruya0612/snatch.git
+cd snatch
 make install
 ```
 

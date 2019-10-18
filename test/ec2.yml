@@ -329,6 +329,9 @@ Resources:
         - Key: Name
           Value: !Sub "${AppName}-${Env}-pub-ec2"
           PropagateAtLaunch: true
+        - Key: Role
+          Value: !Ref Env
+          PropagateAtLaunch: true
       TerminationPolicies:
         - OldestInstance
       VPCZoneIdentifier:
