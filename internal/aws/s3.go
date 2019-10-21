@@ -18,12 +18,12 @@ type Object struct {
 
 type Objects []Object
 
-func newS3Sess(profile string, region string) *s3.S3 {
+func newS3Sess(profile, region string) *s3.S3 {
 	sess := getSession(profile, region)
 	return s3.New(sess)
 }
 
-func ListBuckets(profile string, region string) error {
+func ListBuckets(profile, region string, flag bool) error {
 	client := newS3Sess(profile, region)
 
 	res, err := client.ListBuckets(nil)
@@ -38,20 +38,26 @@ func ListBuckets(profile string, region string) error {
 		elements = append(elements, item)
 	}
 
-	bucket, err := util.Prompt(elements, "Select Bucket")
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
+	if !flag {
+		for _, i := range elements {
+			fmt.Printf("%v\n", i)
+		}
+	} else {
+		bucket, err := util.Prompt(elements, "Select Bucket")
+		if err != nil {
+			return fmt.Errorf("%v", err)
+		}
 
-	err = ListObjects(client, bucket)
-	if err != nil {
-		return fmt.Errorf("%v", err)
+		err = listObjects(client, bucket)
+		if err != nil {
+			return fmt.Errorf("%v", err)
+		}
 	}
 
 	return nil
 }
 
-func ListObjects(client *s3.S3, bucket string) error {
+func listObjects(client *s3.S3, bucket string) error {
 	input := &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucket),
 	}

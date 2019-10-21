@@ -168,7 +168,8 @@ func SendCommand(profile, region, file, id, tag string, args []string) error {
 
 	input := &ssm.SendCommandInput{
 		DocumentName:   aws.String("AWS-RunShellScript"),
-		MaxErrors:      aws.String("1"),
+		MaxConcurrency: aws.String("25%"),
+		MaxErrors:      aws.String("0"),
 		TimeoutSeconds: aws.Int64(60),
 		Parameters:     param,
 	}

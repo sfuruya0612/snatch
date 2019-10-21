@@ -106,6 +106,12 @@ func New(date, hash, goversion string) *cli.App {
 			Name:   "s3",
 			Usage:  "Get Objects in selected S3 Bucket at interactive prompt. (API: ListBuckets and ListObjects)",
 			Action: cmd.ListBuckets,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "l",
+					Usage: "Get Objects list.",
+				},
+			},
 		},
 		{
 			Name:   "ssm",
