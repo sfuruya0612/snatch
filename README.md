@@ -77,8 +77,17 @@ docker-compose run cli snatch <command>
 
 #### Functional test
 
+##### pip package install
+
+###### Required
+* python and pip installed
+
+``` sh
+make pip_install
+```
+
 ##### Create resource
-*Runs on the back end*  
+*Runs on the backend*  
 
 * EC2 Instances(SpotInstance)
 
@@ -93,7 +102,7 @@ snatch ssm run -t <tag>
 ```
 
 ##### Delete resources
-*Runs on the back end*  
+*Runs on the backend*  
 
 ``` sh
 make delete_stack
