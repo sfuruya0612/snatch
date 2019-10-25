@@ -150,6 +150,11 @@ func New(date, hash, goversion string) *cli.App {
 				},
 			},
 		},
+		{
+			Name:   "cfn",
+			Usage:  "Display a list of stacks. (API: )",
+			Action: cmd.DescribeStacks,
+		},
 	}
 
 	return app
