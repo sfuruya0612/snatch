@@ -8,8 +8,10 @@ import (
 )
 
 type Stack struct {
-	Name   string
-	Status string
+	Name       string
+	Status     string
+	CreateDate string
+	UpdateDate string
 }
 
 type Stacks []Stack
@@ -29,14 +31,26 @@ func DescribeStacks(profile, region string) error {
 
 	list := Stacks{}
 	for _, l := range res.Stacks {
+
+		create := l.CreationTime.String()
+
+		update := "None"
+		if l.LastUpdatedTime != nil {
+			update = l.LastUpdatedTime.String()
+		}
+
 		list = append(list, Stack{
-			Name:   *l.StackName,
-			Status: *l.StackStatus,
+			Name:       *l.StackName,
+			Status:     *l.StackStatus,
+			CreateDate: create,
+			UpdateDate: update,
 		})
 	}
 	f := util.Formatln(
 		list.Name(),
 		list.Status(),
+		list.CreateDate(),
+		list.UpdateDate(),
 	)
 
 	for _, i := range list {
@@ -44,6 +58,8 @@ func DescribeStacks(profile, region string) error {
 			f,
 			i.Name,
 			i.Status,
+			i.CreateDate,
+			i.UpdateDate,
 		)
 	}
 
@@ -51,17 +67,33 @@ func DescribeStacks(profile, region string) error {
 }
 
 func (s Stacks) Name() []string {
-	name := []string{}
+	n := []string{}
 	for _, i := range s {
-		name = append(name, i.Name)
+		n = append(n, i.Name)
 	}
-	return name
+	return n
 }
 
 func (s Stacks) Status() []string {
-	status := []string{}
+	sts := []string{}
 	for _, i := range s {
-		status = append(status, i.Status)
+		sts = append(sts, i.Status)
 	}
-	return status
+	return sts
+}
+
+func (s Stacks) CreateDate() []string {
+	c := []string{}
+	for _, i := range s {
+		c = append(c, i.CreateDate)
+	}
+	return c
+}
+
+func (s Stacks) UpdateDate() []string {
+	u := []string{}
+	for _, i := range s {
+		u = append(u, i.UpdateDate)
+	}
+	return u
 }

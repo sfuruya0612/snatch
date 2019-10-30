@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/sfuruya0612/snatch/internal/util"
 )
@@ -107,8 +106,10 @@ func DescribeReplicationGroups(profile string, region string) error {
 			}
 
 			for _, nm := range n.NodeGroupMembers {
-				if nm.CurrentRole == nil {
-					nm.CurrentRole = aws.String("NULL")
+
+				role := "None"
+				if nm.CurrentRole != nil {
+					role = *nm.CurrentRole
 				}
 
 				list = append(list, CacheNode{
@@ -118,7 +119,7 @@ func DescribeReplicationGroups(profile string, region string) error {
 					Port:           port,
 					CacheClusterID: *nm.CacheClusterId,
 					CacheNodeID:    *nm.CacheNodeId,
-					CurrentRole:    *nm.CurrentRole,
+					CurrentRole:    role,
 				})
 			}
 		}

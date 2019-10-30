@@ -54,33 +54,36 @@ func DescribeInstances(profile, region, tag string) error {
 	for _, r := range res.Reservations {
 		for _, i := range r.Instances {
 
-			var tag_name string
+			name := ""
 			for _, t := range i.Tags {
 				if *t.Key == "Name" {
-					tag_name = *t.Value
+					name = *t.Value
 				}
 			}
 
-			if i.PrivateIpAddress == nil {
-				i.PrivateIpAddress = aws.String("NULL")
+			priip := "None"
+			if i.PrivateIpAddress != nil {
+				priip = *i.PrivateIpAddress
 			}
 
-			if i.PublicIpAddress == nil {
-				i.PublicIpAddress = aws.String("NULL")
+			pubip := "None"
+			if i.PublicIpAddress != nil {
+				pubip = *i.PublicIpAddress
 			}
 
-			if i.KeyName == nil {
-				i.KeyName = aws.String("NULL")
+			key := "None"
+			if i.KeyName != nil {
+				key = *i.KeyName
 			}
 
 			list = append(list, Instance{
-				Name:             tag_name,
+				Name:             name,
 				InstanceId:       *i.InstanceId,
 				InstanceType:     *i.InstanceType,
-				PrivateIpAddress: *i.PrivateIpAddress,
-				PublicIpAddress:  *i.PublicIpAddress,
+				PrivateIpAddress: priip,
+				PublicIpAddress:  pubip,
 				State:            *i.State.Name,
-				KeyName:          *i.KeyName,
+				KeyName:          key,
 				AvailabilityZone: *i.Placement.AvailabilityZone,
 			})
 		}
