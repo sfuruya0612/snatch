@@ -38,20 +38,23 @@ func ListBuckets(profile, region string, flag bool) error {
 		elements = append(elements, item)
 	}
 
+	// flagがなければ出力してreturn
 	if !flag {
 		for _, i := range elements {
 			fmt.Printf("%v\n", i)
 		}
-	} else {
-		bucket, err := util.Prompt(elements, "Select Bucket")
-		if err != nil {
-			return fmt.Errorf("%v", err)
-		}
 
-		err = listObjects(client, bucket)
-		if err != nil {
-			return fmt.Errorf("%v", err)
-		}
+		return nil
+	}
+
+	bucket, err := util.Prompt(elements, "Select Bucket")
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	err = listObjects(client, bucket)
+	if err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil

@@ -33,7 +33,7 @@ func StartSession(profile, region string) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	// ssm.DescribeInstanceInformation では NameTag が取得できないので
+	// ssm.DescribeInstanceInformation では NameTag が取得できない
 	// InstanceId で fileter して ec2.DescribeInstance から取得する
 	list, err := getInstancesByInstanceIds(profile, region, ids)
 	if err != nil {
@@ -77,8 +77,7 @@ func StartSession(profile, region string) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	err = util.ExecCommand(plug, string(sessJson), region, "StartSession", profile, string(paramsJson), endpoint)
-	if err != nil {
+	if err = util.ExecCommand(plug, string(sessJson), region, "StartSession", profile, string(paramsJson), endpoint); err != nil {
 		fmt.Println(err)
 		err := deleteStartSession(client, *sess.SessionId)
 		if err != nil {
