@@ -361,7 +361,7 @@ Resources:
         LaunchTemplate:
           LaunchTemplateSpecification:
             LaunchTemplateId: !Ref LaunchTemplate
-            Version: "1"
+            Version: !GetAtt LaunchTemplate.LatestVersionNumber
           Overrides:
             - InstanceType: !Ref InstanceType
             - InstanceType: !Ref InstanceType1
