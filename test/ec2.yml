@@ -19,11 +19,24 @@ Parameters:
   InstanceType:
     Type: String
     Default: t3.small
-    Description: ""
+    Description: "Set LaunchTemplate"
+  InstanceType1:
+    Type: String
+    Default: t3.micro
+    Description: "Set AutoScaling SpotFleet Type"
+  InstanceType2:
+    Type: String
+    Default: t3.nano
+    Description: "Set AutoScaling SpotFleet Type"
   InstanceNum:
     Type: String
     Default: 2
     Description: ""
+
+Mappings:
+  AZRegions:
+    ap-northeast-1:
+      AZs: ["a", "c", "d"]
 
 Resources:
   # VPC
@@ -39,63 +52,81 @@ Resources:
           Value: !Sub "${AppName}-${Env}-vpc"
 
   # subnets
-  SubnetPub1a:
+  SubnetPub1:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: ap-northeast-1a
+      AvailabilityZone:
+        Fn::Sub:
+          - "${AWS::Region}${AZ}"
+          - AZ: !Select [ 0, !FindInMap [ "AZRegions", !Ref "AWS::Region", "AZs" ] ]
       CidrBlock: "10.0.0.0/25"
       MapPublicIpOnLaunch: true
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub "${AppName}-${Env}-pub-1a-subnet"
-  SubnetPub1c:
+          Value: !Sub "${AppName}-${Env}-pub-mono-subnet"
+  SubnetPub2:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: ap-northeast-1c
+      AvailabilityZone:
+        Fn::Sub:
+          - "${AWS::Region}${AZ}"
+          - AZ: !Select [ 1, !FindInMap [ "AZRegions", !Ref "AWS::Region", "AZs" ] ]
       CidrBlock: "10.0.1.0/25"
       MapPublicIpOnLaunch: true
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub "${AppName}-${Env}-pub-1c-subnet"
-  SubnetPub1d:
+          Value: !Sub "${AppName}-${Env}-pub-di-subnet"
+  SubnetPub3:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: ap-northeast-1d
+      AvailabilityZone:
+        Fn::Sub:
+          - "${AWS::Region}${AZ}"
+          - AZ: !Select [ 2, !FindInMap [ "AZRegions", !Ref "AWS::Region", "AZs" ] ]
       CidrBlock: "10.0.2.0/25"
       MapPublicIpOnLaunch: true
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub "${AppName}-${Env}-pub-1d-subnet"
-  SubnetPri1a:
+          Value: !Sub "${AppName}-${Env}-pub-tri-subnet"
+  SubnetPri1:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: ap-northeast-1a
+      AvailabilityZone:
+        Fn::Sub:
+          - "${AWS::Region}${AZ}"
+          - AZ: !Select [ 0, !FindInMap [ "AZRegions", !Ref "AWS::Region", "AZs" ] ]
       CidrBlock: "10.0.0.128/25"
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub "${AppName}-${Env}-pri-1a-subnet"
-  SubnetPri1c:
+          Value: !Sub "${AppName}-${Env}-pri-mono-subnet"
+  SubnetPri2:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: ap-northeast-1c
+      AvailabilityZone:
+        Fn::Sub:
+          - "${AWS::Region}${AZ}"
+          - AZ: !Select [ 1, !FindInMap [ "AZRegions", !Ref "AWS::Region", "AZs" ] ]
       CidrBlock: "10.0.1.128/25"
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub "${AppName}-${Env}-pri-1c-subnet"
-  SubnetPri1d:
+          Value: !Sub "${AppName}-${Env}-pri-di-subnet"
+  SubnetPri3:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: ap-northeast-1d
+      AvailabilityZone:
+        Fn::Sub:
+          - "${AWS::Region}${AZ}"
+          - AZ: !Select [ 2, !FindInMap [ "AZRegions", !Ref "AWS::Region", "AZs" ] ]
       CidrBlock: "10.0.2.128/25"
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub "${AppName}-${Env}-pri-1d-subnet"
+          Value: !Sub "${AppName}-${Env}-pri-tri-subnet"
 
   # InternetGateway
   Igw:
@@ -114,7 +145,7 @@ Resources:
   Dopt:
     Type: "AWS::EC2::DHCPOptions"
     Properties:
-      DomainName: ap-northeast-1.compute.internal
+      DomainName: !Sub "${AWS::Region}.compute.internal"
       DomainNameServers:
         - AmazonProvidedDNS
       Tags:
@@ -154,32 +185,32 @@ Resources:
     Type: "AWS::EC2::SubnetNetworkAclAssociation"
     Properties:
        NetworkAclId: !Ref NetworkAcl
-       SubnetId: !Ref SubnetPub1a
+       SubnetId: !Ref SubnetPub1
   SubnetAcl2:
     Type: "AWS::EC2::SubnetNetworkAclAssociation"
     Properties:
        NetworkAclId: !Ref NetworkAcl
-       SubnetId: !Ref SubnetPub1c
+       SubnetId: !Ref SubnetPub2
   SubnetAcl3:
     Type: "AWS::EC2::SubnetNetworkAclAssociation"
     Properties:
       NetworkAclId: !Ref NetworkAcl
-      SubnetId: !Ref SubnetPub1d
+      SubnetId: !Ref SubnetPub3
   SubnetAcl4:
     Type: "AWS::EC2::SubnetNetworkAclAssociation"
     Properties:
        NetworkAclId: !Ref NetworkAcl
-       SubnetId: !Ref SubnetPri1a
+       SubnetId: !Ref SubnetPri1
   SubnetAcl5:
     Type: "AWS::EC2::SubnetNetworkAclAssociation"
     Properties:
        NetworkAclId: !Ref NetworkAcl
-       SubnetId: !Ref SubnetPri1c
+       SubnetId: !Ref SubnetPri2
   SubnetAcl6:
     Type: "AWS::EC2::SubnetNetworkAclAssociation"
     Properties:
       NetworkAclId: !Ref NetworkAcl
-      SubnetId: !Ref SubnetPri1d
+      SubnetId: !Ref SubnetPri3
 
   # Route table
   RtbPub:
@@ -202,32 +233,32 @@ Resources:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
       RouteTableId: !Ref RtbPub
-      SubnetId: !Ref SubnetPub1a
+      SubnetId: !Ref SubnetPub1
   SubnetRoute2:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
       RouteTableId: !Ref RtbPub
-      SubnetId: !Ref SubnetPub1c
+      SubnetId: !Ref SubnetPub2
   SubnetRoute3:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
       RouteTableId: !Ref RtbPub
-      SubnetId: !Ref SubnetPub1d
+      SubnetId: !Ref SubnetPub3
   SubnetRoute4:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
       RouteTableId: !Ref RtbPri
-      SubnetId: !Ref SubnetPri1a
+      SubnetId: !Ref SubnetPri1
   SubnetRoute5:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
       RouteTableId: !Ref RtbPri
-      SubnetId: !Ref SubnetPri1c
+      SubnetId: !Ref SubnetPri2
   SubnetRoute6:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
       RouteTableId: !Ref RtbPri
-      SubnetId: !Ref SubnetPri1d
+      SubnetId: !Ref SubnetPri3
 
   # Routing
   Route:
@@ -285,7 +316,7 @@ Resources:
             Ebs:
               DeleteOnTermination: true
               VolumeType: "gp2"
-              VolumeSize: 30
+              VolumeSize: 8
         IamInstanceProfile:
           Arn: !GetAtt InstanceProfile.Arn
         ImageId: !Ref ImageId
@@ -294,7 +325,7 @@ Resources:
         SecurityGroupIds:
           - !Ref SecurityGroup
         UserData:
-          Fn::Base64: !Sub |
+          Fn::Base64: |
             #!/bin/sh -x
 
             apt update && apt upgrade -y
@@ -307,9 +338,15 @@ Resources:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
       AvailabilityZones:
-        - ap-northeast-1a
-        - ap-northeast-1c
-        - ap-northeast-1d
+        - Fn::Sub:
+          - "${AWS::Region}${AZ}"
+          - AZ: !Select [ 0, !FindInMap [ "AZRegions", !Ref "AWS::Region", "AZs" ] ]
+        - Fn::Sub:
+          - "${AWS::Region}${AZ}"
+          - AZ: !Select [ 1, !FindInMap [ "AZRegions", !Ref "AWS::Region", "AZs" ] ]
+        - Fn::Sub:
+          - "${AWS::Region}${AZ}"
+          - AZ: !Select [ 2, !FindInMap [ "AZRegions", !Ref "AWS::Region", "AZs" ] ]
       Cooldown: "60"
       DesiredCapacity: !Ref InstanceNum
       HealthCheckGracePeriod: 60
@@ -325,6 +362,10 @@ Resources:
           LaunchTemplateSpecification:
             LaunchTemplateId: !Ref LaunchTemplate
             Version: "1"
+          Overrides:
+            - InstanceType: !Ref InstanceType
+            - InstanceType: !Ref InstanceType1
+            - InstanceType: !Ref InstanceType2
       Tags:
         - Key: Name
           Value: !Sub "${AppName}-${Env}-pub-ec2"
@@ -335,6 +376,6 @@ Resources:
       TerminationPolicies:
         - OldestInstance
       VPCZoneIdentifier:
-        - !Ref SubnetPub1a
-        - !Ref SubnetPub1c
-        - !Ref SubnetPub1d
+        - !Ref SubnetPub1
+        - !Ref SubnetPub2
+        - !Ref SubnetPub3

@@ -80,7 +80,7 @@ class CreateStack:
         for template in TEMPLATES:
             path = os.getcwd() + template
             body = open(path).read()
-            stack_name = app_name + "-" + re.sub('\/(.*)\/(.*)\.yml', '\\1-\\2', template)
+            stack_name = profile + "-" + app_name + "-" + re.sub('\/(.*)\/(.*)\.yml', '\\1-\\2', template)
 
             self.valid_template(template, body, cfn)
 
