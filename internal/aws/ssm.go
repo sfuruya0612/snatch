@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"sort"
 	"strings"
 	"time"
 
@@ -14,17 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/sfuruya0612/snatch/internal/util"
 )
-
-type SsmInstance struct {
-	ComputerName    string
-	InstanceID      string
-	IPAddress       string
-	AgentVersion    string
-	PlatformName    string
-	PlatformVersion string
-}
-
-type SsmInstances []SsmInstance
 
 type Response struct {
 	InstanceId string   `json:"instance_id"`
@@ -40,18 +28,21 @@ func newSsmSess(profile, region string) *ssm.SSM {
 func StartSession(profile, region string) error {
 	client := newSsmSess(profile, region)
 
-	list, err := listInstances(client)
+	ids, err := listInstanceIds(client)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	// ssm.DescribeInstanceInformation では NameTag が取得できない
+	// InstanceId で fileter して ec2.DescribeInstance から取得する
+	list, err := getInstancesByInstanceIds(profile, region, ids)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
 	elements := []string{}
 	for _, i := range list {
-
-		var item string
-		// item = i.InstanceID + "\t" + i.IPAddress
-		item = i.InstanceID
-
+		item := i.Name + "\t" + i.InstanceId
 		elements = append(elements, item)
 	}
 
@@ -60,8 +51,10 @@ func StartSession(profile, region string) error {
 		return fmt.Errorf("%v", err)
 	}
 
+	id := strings.Split(instance, "\t")
+
 	input := &ssm.StartSessionInput{
-		Target: aws.String(instance),
+		Target: aws.String(id[1]),
 	}
 
 	sess, endpoint, err := createStartSession(client, input)
@@ -84,21 +77,19 @@ func StartSession(profile, region string) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	err = util.ExecCommand(plug, string(sessJson), region, "StartSession", profile, string(paramsJson), endpoint)
-	if err != nil {
+	if err = util.ExecCommand(plug, string(sessJson), region, "StartSession", profile, string(paramsJson), endpoint); err != nil {
 		fmt.Println(err)
 		err := deleteStartSession(client, *sess.SessionId)
 		if err != nil {
-			return fmt.Errorf("%s", err)
+			return fmt.Errorf("%v", err)
 		}
 	}
 
 	return nil
 }
 
-func listInstances(client *ssm.SSM) (SsmInstances, error) {
+func listInstanceIds(client *ssm.SSM) ([]string, error) {
 	input := &ssm.DescribeInstanceInformationInput{
-		MaxResults: aws.Int64(50),
 		Filters: []*ssm.InstanceInformationStringFilter{
 			{
 				Key:    aws.String("PingStatus"),
@@ -107,29 +98,20 @@ func listInstances(client *ssm.SSM) (SsmInstances, error) {
 		},
 	}
 
-	instances, err := client.DescribeInstanceInformation(input)
+	ids := []string{}
+	output := func(page *ssm.DescribeInstanceInformationOutput, lastPage bool) bool {
+		for _, i := range page.InstanceInformationList {
+			ids = append(ids, *i.InstanceId)
+		}
+		return true
+	}
+
+	err := client.DescribeInstanceInformationPages(input, output)
 	if err != nil {
-		return nil, fmt.Errorf("Describe information: %v", err)
+		return nil, fmt.Errorf("Describe instance information: %v", err)
 	}
 
-	list := SsmInstances{}
-	for _, i := range instances.InstanceInformationList {
-
-		list = append(list, SsmInstance{
-			ComputerName:    *i.ComputerName,
-			InstanceID:      *i.InstanceId,
-			IPAddress:       *i.IPAddress,
-			AgentVersion:    *i.AgentVersion,
-			PlatformName:    *i.PlatformName,
-			PlatformVersion: *i.PlatformVersion,
-		})
-	}
-
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].ComputerName < list[j].ComputerName
-	})
-
-	return list, nil
+	return ids, nil
 }
 
 func createStartSession(client *ssm.SSM, input *ssm.StartSessionInput) (*ssm.StartSessionOutput, string, error) {
@@ -185,7 +167,8 @@ func SendCommand(profile, region, file, id, tag string, args []string) error {
 
 	input := &ssm.SendCommandInput{
 		DocumentName:   aws.String("AWS-RunShellScript"),
-		MaxErrors:      aws.String("1"),
+		MaxConcurrency: aws.String("25%"),
+		MaxErrors:      aws.String("0"),
 		TimeoutSeconds: aws.Int64(60),
 		Parameters:     param,
 	}
@@ -279,52 +262,4 @@ func SendCommand(profile, region, file, id, tag string, args []string) error {
 	}
 
 	return nil
-}
-
-func (ssmi SsmInstances) ComputerName() []string {
-	cname := []string{}
-	for _, i := range ssmi {
-		cname = append(cname, i.ComputerName)
-	}
-	return cname
-}
-
-func (ssmi SsmInstances) InstanceID() []string {
-	id := []string{}
-	for _, i := range ssmi {
-		id = append(id, i.InstanceID)
-	}
-	return id
-}
-
-func (ssmi SsmInstances) IPAddress() []string {
-	ip := []string{}
-	for _, i := range ssmi {
-		ip = append(ip, i.IPAddress)
-	}
-	return ip
-}
-
-func (ssmi SsmInstances) AgentVersion() []string {
-	ver := []string{}
-	for _, i := range ssmi {
-		ver = append(ver, i.AgentVersion)
-	}
-	return ver
-}
-
-func (ssmi SsmInstances) PlatformName() []string {
-	pname := []string{}
-	for _, i := range ssmi {
-		pname = append(pname, i.PlatformName)
-	}
-	return pname
-}
-
-func (ssmi SsmInstances) PlatformVersion() []string {
-	pver := []string{}
-	for _, i := range ssmi {
-		pver = append(pver, i.PlatformVersion)
-	}
-	return pver
 }

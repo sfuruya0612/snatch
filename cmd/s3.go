@@ -1,4 +1,4 @@
-package command
+package cmd
 
 import (
 	"fmt"
@@ -7,11 +7,14 @@ import (
 	"github.com/urfave/cli"
 )
 
-func ListElb(c *cli.Context) error {
+func ListBuckets(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
+	flag := c.Bool("l")
 
-	err := aws.DescribeLoadBalancers(profile, region)
+	fmt.Printf("\x1b[32mAWS_PROFILE: %s , REGION: %s\x1b[0m\n", profile, region)
+
+	err := aws.ListBuckets(profile, region, flag)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

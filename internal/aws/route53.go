@@ -20,13 +20,13 @@ type Record struct {
 
 type Records []Record
 
-func NewRoute53Sess(profile string, region string) *route53.Route53 {
+func newRoute53Sess(profile string, region string) *route53.Route53 {
 	sess := getSession(profile, region)
 	return route53.New(sess)
 }
 
 func ListHostedZones(profile string, region string) error {
-	client := NewRoute53Sess(profile, region)
+	client := newRoute53Sess(profile, region)
 
 	res, err := client.ListHostedZones(nil)
 	if err != nil {
@@ -94,6 +94,7 @@ func ListHostedZones(profile string, region string) error {
 			i.DomainValue,
 		)
 	}
+
 	return nil
 }
 

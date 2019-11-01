@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/sfuruya0612/snatch/internal/util"
 )
@@ -32,13 +31,13 @@ type GroupNode struct {
 
 type GroupNodes []GroupNode
 
-func NewEcSess(profile string, region string) *elasticache.ElastiCache {
+func newElasticacheSess(profile string, region string) *elasticache.ElastiCache {
 	sess := getSession(profile, region)
 	return elasticache.New(sess)
 }
 
 func DescribeCacheClusters(profile string, region string) error {
-	svc := NewEcSess(profile, region)
+	svc := newElasticacheSess(profile, region)
 
 	res, err := svc.DescribeCacheClusters(nil)
 	if err != nil {
@@ -82,7 +81,7 @@ func DescribeCacheClusters(profile string, region string) error {
 }
 
 func DescribeReplicationGroups(profile string, region string) error {
-	svc := NewEcSess(profile, region)
+	svc := newElasticacheSess(profile, region)
 
 	res, err := svc.DescribeReplicationGroups(nil)
 	if err != nil {
@@ -107,8 +106,10 @@ func DescribeReplicationGroups(profile string, region string) error {
 			}
 
 			for _, nm := range n.NodeGroupMembers {
-				if nm.CurrentRole == nil {
-					nm.CurrentRole = aws.String("NULL")
+
+				role := "None"
+				if nm.CurrentRole != nil {
+					role = *nm.CurrentRole
 				}
 
 				list = append(list, CacheNode{
@@ -118,7 +119,7 @@ func DescribeReplicationGroups(profile string, region string) error {
 					Port:           port,
 					CacheClusterID: *nm.CacheClusterId,
 					CacheNodeID:    *nm.CacheNodeId,
-					CurrentRole:    *nm.CurrentRole,
+					CurrentRole:    role,
 				})
 			}
 		}

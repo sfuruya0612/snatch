@@ -1,0 +1,26 @@
+language: go
+
+go:
+  - 1.11.x
+  - 1.12.x
+  - 1.13.x
+
+env:
+  global:
+    - BUILD_GOARCH=amd64
+    - GO111MODULE=on
+  matrix:
+    - BUILD_GOOS=linux
+    - BUILD_GOOS=darwin
+
+install:
+  - go get github.com/golangci/golangci-lint/cmd/golangci-lint
+
+before_script:
+  - go version
+
+script:
+  - go build
+  - go fmt ./...
+  - go vet ./...
+  - golangci-lint run

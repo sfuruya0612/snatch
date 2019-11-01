@@ -3,6 +3,7 @@ package aws
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/service/elb"
 	"github.com/sfuruya0612/snatch/internal/util"
@@ -12,7 +13,7 @@ type Balancer struct {
 	Name      string
 	DNSName   string
 	Scheme    string
-	Instances []string
+	Instances string
 }
 
 type Balancers []Balancer
@@ -33,11 +34,15 @@ func DescribeLoadBalancers(profile string, region string) error {
 	list := Balancers{}
 	for _, i := range res.LoadBalancerDescriptions {
 
-		var instance []string
+		var instance string
 		if i.Instances != nil {
+			var instances []string
+
 			for _, ii := range i.Instances {
-				instance = append(instance, *ii.InstanceId)
+				instances = append(instances, *ii.InstanceId)
 			}
+
+			instance = strings.Join(instances[:], ",")
 		}
 
 		list = append(list, Balancer{
@@ -98,7 +103,7 @@ func (bal Balancers) Scheme() []string {
 func (bal Balancers) Instances() []string {
 	ins := []string{}
 	for _, i := range bal {
-		ins = append(ins, i.Instances...)
+		ins = append(ins, i.Instances)
 	}
 	return ins
 }

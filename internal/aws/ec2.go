@@ -3,6 +3,7 @@ package aws
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -11,10 +12,10 @@ import (
 
 type Instance struct {
 	Name             string
-	InstanceID       string
+	InstanceId       string
 	InstanceType     string
-	PrivateIPAddress string
-	PublicIPAddress  string
+	PrivateIpAddress string
+	PublicIpAddress  string
 	State            string
 	KeyName          string
 	AvailabilityZone string
@@ -28,9 +29,23 @@ func newEc2Sess(profile string, region string) *ec2.EC2 {
 }
 
 func DescribeInstances(profile, region, tag string) error {
-	ec2 := newEc2Sess(profile, region)
+	client := newEc2Sess(profile, region)
 
-	res, err := ec2.DescribeInstances(nil)
+	input := &ec2.DescribeInstancesInput{}
+
+	if tag != "" {
+		spl := strings.Split(tag, ":")
+		if len(spl) == 0 {
+			return fmt.Errorf("parse tag=%s", tag)
+		}
+
+		input.Filters = append(input.Filters, &ec2.Filter{
+			Name:   aws.String("tag:" + spl[0]),
+			Values: []*string{aws.String(spl[1])},
+		})
+	}
+
+	res, err := client.DescribeInstances(input)
 	if err != nil {
 		return fmt.Errorf("Describe running instances: %v", err)
 	}
@@ -39,43 +54,46 @@ func DescribeInstances(profile, region, tag string) error {
 	for _, r := range res.Reservations {
 		for _, i := range r.Instances {
 
-			var tag_name string
+			name := ""
 			for _, t := range i.Tags {
 				if *t.Key == "Name" {
-					tag_name = *t.Value
+					name = *t.Value
 				}
 			}
 
-			if i.PrivateIpAddress == nil {
-				i.PrivateIpAddress = aws.String("NULL")
+			priip := "None"
+			if i.PrivateIpAddress != nil {
+				priip = *i.PrivateIpAddress
 			}
 
-			if i.PublicIpAddress == nil {
-				i.PublicIpAddress = aws.String("NULL")
+			pubip := "None"
+			if i.PublicIpAddress != nil {
+				pubip = *i.PublicIpAddress
 			}
 
-			if i.KeyName == nil {
-				i.KeyName = aws.String("NULL")
+			key := "None"
+			if i.KeyName != nil {
+				key = *i.KeyName
 			}
 
 			list = append(list, Instance{
-				Name:             tag_name,
-				InstanceID:       *i.InstanceId,
+				Name:             name,
+				InstanceId:       *i.InstanceId,
 				InstanceType:     *i.InstanceType,
-				PrivateIPAddress: *i.PrivateIpAddress,
-				PublicIPAddress:  *i.PublicIpAddress,
+				PrivateIpAddress: priip,
+				PublicIpAddress:  pubip,
 				State:            *i.State.Name,
-				KeyName:          *i.KeyName,
+				KeyName:          key,
 				AvailabilityZone: *i.Placement.AvailabilityZone,
 			})
 		}
 	}
 	f := util.Formatln(
 		list.Name(),
-		list.InstanceID(),
+		list.InstanceId(),
 		list.InstanceType(),
-		list.PrivateIPAddress(),
-		list.PublicIPAddress(),
+		list.PrivateIpAddress(),
+		list.PublicIpAddress(),
 		list.State(),
 		list.KeyName(),
 		list.AvailabilityZone(),
@@ -89,10 +107,10 @@ func DescribeInstances(profile, region, tag string) error {
 		fmt.Printf(
 			f,
 			i.Name,
-			i.InstanceID,
+			i.InstanceId,
 			i.InstanceType,
-			i.PrivateIPAddress,
-			i.PublicIPAddress,
+			i.PrivateIpAddress,
+			i.PublicIpAddress,
 			i.State,
 			i.KeyName,
 			i.AvailabilityZone,
@@ -100,6 +118,42 @@ func DescribeInstances(profile, region, tag string) error {
 	}
 
 	return nil
+}
+
+func getInstancesByInstanceIds(profile, region string, ids []string) (Instances, error) {
+	client := newEc2Sess(profile, region)
+
+	input := &ec2.DescribeInstancesInput{
+		InstanceIds: aws.StringSlice(ids),
+	}
+
+	res, err := client.DescribeInstances(input)
+	if err != nil {
+		return nil, fmt.Errorf("Describe instances by instance ids: %v", err)
+	}
+
+	list := Instances{}
+	for _, r := range res.Reservations {
+		for _, i := range r.Instances {
+
+			var tag_name string
+			for _, t := range i.Tags {
+				if *t.Key == "Name" {
+					tag_name = *t.Value
+				}
+			}
+
+			list = append(list, Instance{
+				Name:       tag_name,
+				InstanceId: *i.InstanceId,
+			})
+		}
+	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Name < list[j].Name
+	})
+
+	return list, nil
 }
 
 func (ins Instances) Name() []string {
@@ -110,10 +164,10 @@ func (ins Instances) Name() []string {
 	return name
 }
 
-func (ins Instances) InstanceID() []string {
+func (ins Instances) InstanceId() []string {
 	id := []string{}
 	for _, i := range ins {
-		id = append(id, i.InstanceID)
+		id = append(id, i.InstanceId)
 	}
 	return id
 }
@@ -126,18 +180,18 @@ func (ins Instances) InstanceType() []string {
 	return ty
 }
 
-func (ins Instances) PrivateIPAddress() []string {
+func (ins Instances) PrivateIpAddress() []string {
 	pip := []string{}
 	for _, i := range ins {
-		pip = append(pip, i.PrivateIPAddress)
+		pip = append(pip, i.PrivateIpAddress)
 	}
 	return pip
 }
 
-func (ins Instances) PublicIPAddress() []string {
+func (ins Instances) PublicIpAddress() []string {
 	gip := []string{}
 	for _, i := range ins {
-		gip = append(gip, i.PublicIPAddress)
+		gip = append(gip, i.PublicIpAddress)
 	}
 	return gip
 }
