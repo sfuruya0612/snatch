@@ -42,7 +42,7 @@ func StartSession(profile, region string) error {
 
 	elements := []string{}
 	for _, i := range list {
-		item := i.Name + "\t" + i.InstanceId
+		item := i.Name + "\t" + i.InstanceId + "\t" + i.LaunchTime
 		elements = append(elements, item)
 	}
 

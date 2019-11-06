@@ -19,6 +19,7 @@ type Instance struct {
 	State            string
 	KeyName          string
 	AvailabilityZone string
+	LaunchTime       string
 }
 
 type Instances []Instance
@@ -143,9 +144,12 @@ func getInstancesByInstanceIds(profile, region string, ids []string) (Instances,
 				}
 			}
 
+			time := i.LaunchTime.String()
+
 			list = append(list, Instance{
 				Name:       tag_name,
 				InstanceId: *i.InstanceId,
+				LaunchTime: time,
 			})
 		}
 	}

@@ -77,19 +77,13 @@ docker-compose run cli snatch <command>
 
 #### Functional test
 
-##### pip package install
-
 ###### Required
 * python and pip installed
-
-``` sh
-make pip_install
-```
 
 ##### Create resource
 *Runs on the backend*  
 
-* EC2 Instances(SpotInstance)
+* EC2 Instances (AutoScaling SpotInstance)
 
 ``` sh
 make create_stack

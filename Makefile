@@ -37,12 +37,11 @@ clean:
 	-docker rmi --force ${NAME}_cli
 
 # Testing
-
 create_stack: pip_install
 	python test/create_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
 
-delete_stack:
+delete_stack: pip_install
 	python test/delete_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
 
-pip_install: pip_install
+pip_install:
 	pushd test ; pip install -r requirements.txt; popd
