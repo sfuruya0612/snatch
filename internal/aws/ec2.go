@@ -10,6 +10,12 @@ import (
 	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// EC2 Client struct
+type EC2 struct {
+	Ec2Client *ec2.EC2
+}
+
+// Instance ec2 instance struct
 type Instance struct {
 	Name             string
 	InstanceId       string
@@ -22,15 +28,19 @@ type Instance struct {
 	LaunchTime       string
 }
 
+// Instances Instance struct slice
 type Instances []Instance
 
-func newEc2Sess(profile string, region string) *ec2.EC2 {
+// NewEc2Sess return EC2 struct initialized
+func NewEc2Sess(profile, region string) *ec2.EC2 {
 	sess := getSession(profile, region)
 	return ec2.New(sess)
 }
 
 func DescribeInstances(profile, region, tag string) error {
-	client := newEc2Sess(profile, region)
+	c := &EC2{
+		Ec2Client: NewEc2Sess(profile, region),
+	}
 
 	input := &ec2.DescribeInstancesInput{}
 
@@ -46,7 +56,7 @@ func DescribeInstances(profile, region, tag string) error {
 		})
 	}
 
-	res, err := client.DescribeInstances(input)
+	res, err := c.Ec2Client.DescribeInstances(input)
 	if err != nil {
 		return fmt.Errorf("Describe running instances: %v", err)
 	}
@@ -122,13 +132,15 @@ func DescribeInstances(profile, region, tag string) error {
 }
 
 func getInstancesByInstanceIds(profile, region string, ids []string) (Instances, error) {
-	client := newEc2Sess(profile, region)
+	c := &EC2{
+		Ec2Client: NewEc2Sess(profile, region),
+	}
 
 	input := &ec2.DescribeInstancesInput{
 		InstanceIds: aws.StringSlice(ids),
 	}
 
-	res, err := client.DescribeInstances(input)
+	res, err := c.Ec2Client.DescribeInstances(input)
 	if err != nil {
 		return nil, fmt.Errorf("Describe instances by instance ids: %v", err)
 	}
@@ -137,17 +149,17 @@ func getInstancesByInstanceIds(profile, region string, ids []string) (Instances,
 	for _, r := range res.Reservations {
 		for _, i := range r.Instances {
 
-			var tag_name string
+			name := ""
 			for _, t := range i.Tags {
 				if *t.Key == "Name" {
-					tag_name = *t.Value
+					name = *t.Value
 				}
 			}
 
 			time := i.LaunchTime.String()
 
 			list = append(list, Instance{
-				Name:       tag_name,
+				Name:       name,
 				InstanceId: *i.InstanceId,
 				LaunchTime: time,
 			})
@@ -158,6 +170,30 @@ func getInstancesByInstanceIds(profile, region string, ids []string) (Instances,
 	})
 
 	return list, nil
+}
+
+func GetConsoleOutput(profile, region, id string) error {
+	c := &EC2{
+		Ec2Client: NewEc2Sess(profile, region),
+	}
+
+	input := &ec2.GetConsoleOutputInput{
+		InstanceId: aws.String(id),
+	}
+
+	output, err := c.Ec2Client.GetConsoleOutput(input)
+	if err != nil {
+		return fmt.Errorf("Get console output: %v", err)
+	}
+
+	d, err := util.DecodeString(*output.Output)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	fmt.Println(d)
+
+	return nil
 }
 
 func (ins Instances) Name() []string {

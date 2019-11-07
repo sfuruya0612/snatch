@@ -13,8 +13,7 @@ func StartSession(c *cli.Context) error {
 
 	fmt.Printf("\x1b[32mAWS_PROFILE: %s , REGION: %s\x1b[0m\n", profile, region)
 
-	err := aws.StartSession(profile, region)
-	if err != nil {
+	if err := aws.StartSession(profile, region); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
@@ -24,8 +23,6 @@ func StartSession(c *cli.Context) error {
 func SendCommand(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
-
-	fmt.Printf("\x1b[32mAWS_PROFILE: %s , REGION: %s\x1b[0m\n", profile, region)
 
 	args := c.Args()
 	file := c.String("file")
@@ -39,8 +36,9 @@ func SendCommand(c *cli.Context) error {
 		return fmt.Errorf("Instance id or tag is required")
 	}
 
-	err := aws.SendCommand(profile, region, file, id, tag, args)
-	if err != nil {
+	fmt.Printf("\x1b[32mAWS_PROFILE: %s , REGION: %s\x1b[0m\n", profile, region)
+
+	if err := aws.SendCommand(profile, region, file, id, tag, args); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

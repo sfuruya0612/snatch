@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
+// getSession returns session initialized
 func getSession(profile string, region string) *session.Session {
 	opts := session.Options{
 		SharedConfigState: session.SharedConfigEnable,
