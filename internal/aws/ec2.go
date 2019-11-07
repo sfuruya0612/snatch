@@ -10,7 +10,7 @@ import (
 	"github.com/sfuruya0612/snatch/internal/util"
 )
 
-// EC2 Client struct
+// EC2 client struct
 type EC2 struct {
 	Ec2Client *ec2.EC2
 }
@@ -131,11 +131,7 @@ func DescribeInstances(profile, region, tag string) error {
 	return nil
 }
 
-func getInstancesByInstanceIds(profile, region string, ids []string) (Instances, error) {
-	c := &EC2{
-		Ec2Client: NewEc2Sess(profile, region),
-	}
-
+func (c *EC2) getInstancesByInstanceIds(ids []string) (Instances, error) {
 	input := &ec2.DescribeInstancesInput{
 		InstanceIds: aws.StringSlice(ids),
 	}
