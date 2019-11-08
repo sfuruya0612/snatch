@@ -53,6 +53,8 @@ func New(date, hash, goversion string) *cli.App {
 		},
 	}
 
+	app.Before = cmd.Before
+
 	app.Commands = []cli.Command{
 		{
 			Name:   "ec2",
