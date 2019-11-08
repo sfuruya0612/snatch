@@ -11,8 +11,8 @@ func ListCertificates(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	err := aws.ListCertificates(profile, region)
-	if err != nil {
+	acm := aws.NewAcmSess(profile, region)
+	if err := acm.ListCertificates(); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

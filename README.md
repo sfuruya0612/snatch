@@ -4,7 +4,7 @@
 <a href="https://travis-ci.org/sfuruya0612/snatch"><img src="https://travis-ci.org/sfuruya0612/snatch.svg?branch=master"></a>
 
 Cli command to get and display Amazon Web Services resources.  
-This tool allows cli to retrieve the necessary contents without logging into the Management console.  
+This tool allows you to retrieve the content you need without logging into the management console.  
 The concept is that you can continue working without leaving the black screen (Terminal software).  
 
 ## Getting started

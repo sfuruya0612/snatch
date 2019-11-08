@@ -11,8 +11,8 @@ func DescribeStacks(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	err := aws.DescribeStacks(profile, region)
-	if err != nil {
+	cloudformation := aws.NewCfnSess(profile, region)
+	if err := cloudformation.DescribeStacks(); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

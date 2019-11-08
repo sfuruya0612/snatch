@@ -9,6 +9,19 @@ import (
 	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// ELB client struct
+type ELB struct {
+	Client *elb.ELB
+}
+
+// NewElbSess return ELB struct initialized
+func NewElbSess(profile, region string) *ELB {
+	return &ELB{
+		Client: elb.New(getSession(profile, region)),
+	}
+}
+
+// Balancer elb struct
 type Balancer struct {
 	Name      string
 	DNSName   string
@@ -16,23 +29,17 @@ type Balancer struct {
 	Instances string
 }
 
+// Balancers Balancer struct slice
 type Balancers []Balancer
 
-func newElbSess(profile string, region string) *elb.ELB {
-	sess := getSession(profile, region)
-	return elb.New(sess)
-}
-
-func DescribeLoadBalancers(profile string, region string) error {
-	elb := newElbSess(profile, region)
-
-	res, err := elb.DescribeLoadBalancers(nil)
+func (c *ELB)DescribeLoadBalancers() error {
+	output, err := c.Client.DescribeLoadBalancers(nil)
 	if err != nil {
 		return fmt.Errorf("No available load balancer: %v", err)
 	}
 
 	list := Balancers{}
-	for _, i := range res.LoadBalancerDescriptions {
+	for _, i := range output.LoadBalancerDescriptions {
 
 		var instance string
 		if i.Instances != nil {

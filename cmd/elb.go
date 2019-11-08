@@ -11,8 +11,8 @@ func ListElb(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	err := aws.DescribeLoadBalancers(profile, region)
-	if err != nil {
+	elb := aws.NewElbSess(profile, region)
+	if err := elb.DescribeLoadBalancers(); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

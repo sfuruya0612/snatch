@@ -7,6 +7,19 @@ import (
 	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// CloudFormation client struct
+type CloudFormation struct {
+	Client *cloudformation.CloudFormation
+}
+
+// newCfnSess return CloudFormation struct initialized
+func NewCfnSess(profile, region string) *CloudFormation {
+	return &CloudFormation{
+		Client: cloudformation.New(getSession(profile, region)),
+	}
+}
+
+// Stack cloudformation stack struct
 type Stack struct {
 	Name       string
 	Status     string
@@ -14,23 +27,17 @@ type Stack struct {
 	UpdateDate string
 }
 
+// Stacks Stack struct slice
 type Stacks []Stack
 
-func newCfnSess(profile, region string) *cloudformation.CloudFormation {
-	sess := getSession(profile, region)
-	return cloudformation.New(sess)
-}
-
-func DescribeStacks(profile, region string) error {
-	client := newCfnSess(profile, region)
-
-	res, err := client.DescribeStacks(nil)
+func (c *CloudFormation) DescribeStacks() error {
+	output, err := c.Client.DescribeStacks(nil)
 	if err != nil {
 		return fmt.Errorf("Describe stacks: %v", err)
 	}
 
 	list := Stacks{}
-	for _, l := range res.Stacks {
+	for _, l := range output.Stacks {
 
 		create := l.CreationTime.String()
 

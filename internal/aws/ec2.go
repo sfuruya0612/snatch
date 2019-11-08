@@ -41,7 +41,11 @@ type Instances []Instance
 func (c *EC2) DescribeInstances(tag string) error {
 	input := &ec2.DescribeInstancesInput{}
 
-	if tag != "" {
+	if len(tag) > 0 {
+		if !strings.Contains(tag, ":") {
+			return fmt.Errorf("%v", "tag is different (e.g. Name:hogehoge)")
+		}
+
 		spl := strings.Split(tag, ":")
 		if len(spl) == 0 {
 			return fmt.Errorf("parse tag=%s", tag)

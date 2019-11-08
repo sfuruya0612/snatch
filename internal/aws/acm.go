@@ -7,6 +7,19 @@ import (
 	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// ACM client struct
+type ACM struct {
+	Client *acm.ACM
+}
+
+// newAcmSess return ACM struct initialized
+func NewAcmSess(profile, region string) *ACM {
+	return &ACM{
+		Client: acm.New(getSession(profile, region)),
+	}
+}
+
+// Certificate acm certicate struct
 type Certificate struct {
 	DomainName string
 	Type       string
@@ -16,34 +29,28 @@ type Certificate struct {
 	// InUseBy    string
 }
 
+// Certificates Certificate struct slice
 type Certificates []Certificate
 
-func newAcmSess(profile string, region string) *acm.ACM {
-	sess := getSession(profile, region)
-	return acm.New(sess)
-}
-
-func ListCertificates(profile string, region string) error {
-	client := newAcmSess(profile, region)
-
-	res, err := client.ListCertificates(nil)
+func (c *ACM) ListCertificates() error {
+	certs, err := c.Client.ListCertificates(nil)
 	if err != nil {
 		return fmt.Errorf("List certificates: %v", err)
 	}
 
 	list := Certificates{}
-	for _, l := range res.CertificateSummaryList {
+	for _, l := range certs.CertificateSummaryList {
 
 		input := &acm.DescribeCertificateInput{
 			CertificateArn: l.CertificateArn,
 		}
 
-		res, err := client.DescribeCertificate(input)
+		output, err := c.Client.DescribeCertificate(input)
 		if err != nil {
 			return fmt.Errorf("Describe certificate: %v", err)
 		}
 
-		cert := res.Certificate
+		cert := output.Certificate
 
 		before := cert.NotBefore.String()
 		after := cert.NotAfter.String()
