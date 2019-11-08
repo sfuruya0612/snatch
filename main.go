@@ -84,12 +84,13 @@ func New(date, hash, goversion string) *cli.App {
 			Action: cmd.ListRds,
 		},
 		{
-			Name:   "ec",
-			Usage:  "Get a list of ElastiCache Cluster resources",
-			Action: cmd.ListElasticache,
+			Name:    "elasticache",
+			Aliases: []string{"ec"},
+			Usage:   "Get a list of ElastiCache Cluster resources",
+			Action:  cmd.ListElasticache,
 			Subcommands: []cli.Command{
 				{
-					Name:   "rg",
+					Name:   "node",
 					Usage:  "Get a list of ElastiCache Node resources",
 					Action: cmd.ListReplicationGroups,
 				},

@@ -42,9 +42,7 @@ func StartSession(profile, region string) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	ec2client := &EC2{
-		Ec2Client: NewEc2Sess(profile, region),
-	}
+	ec2client := NewEc2Sess(profile, region)
 
 	// ssm.DescribeInstanceInformation では NameTag が取得できない
 	// InstanceId で fileter して ec2.DescribeInstance から取得する

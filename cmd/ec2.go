@@ -14,7 +14,8 @@ func ListEc2(c *cli.Context) error {
 
 	fmt.Printf("\x1b[32mAWS_PROFILE: %s , REGION: %s\x1b[0m\n", profile, region)
 
-	if err := aws.DescribeInstances(profile, region, tag); err != nil {
+	ec2 := aws.NewEc2Sess(profile, region)
+	if err := ec2.DescribeInstances(tag); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
@@ -32,7 +33,8 @@ func GetEc2Log(c *cli.Context) error {
 
 	fmt.Printf("\x1b[32mAWS_PROFILE: %s , REGION: %s\x1b[0m\n", profile, region)
 
-	if err := aws.GetConsoleOutput(profile, region, id); err != nil {
+	ec2 := aws.NewEc2Sess(profile, region)
+	if err := ec2.GetConsoleOutput(id); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

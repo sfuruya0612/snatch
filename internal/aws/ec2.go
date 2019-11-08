@@ -12,7 +12,14 @@ import (
 
 // EC2 client struct
 type EC2 struct {
-	Ec2Client *ec2.EC2
+	Client *ec2.EC2
+}
+
+// NewEc2Sess return EC2 struct initialized
+func NewEc2Sess(profile, region string) *EC2 {
+	return &EC2{
+		Client: ec2.New(getSession(profile, region)),
+	}
 }
 
 // Instance ec2 instance struct
@@ -31,17 +38,7 @@ type Instance struct {
 // Instances Instance struct slice
 type Instances []Instance
 
-// NewEc2Sess return EC2 struct initialized
-func NewEc2Sess(profile, region string) *ec2.EC2 {
-	sess := getSession(profile, region)
-	return ec2.New(sess)
-}
-
-func DescribeInstances(profile, region, tag string) error {
-	c := &EC2{
-		Ec2Client: NewEc2Sess(profile, region),
-	}
-
+func (c *EC2) DescribeInstances(tag string) error {
 	input := &ec2.DescribeInstancesInput{}
 
 	if tag != "" {
@@ -56,13 +53,13 @@ func DescribeInstances(profile, region, tag string) error {
 		})
 	}
 
-	res, err := c.Ec2Client.DescribeInstances(input)
+	output, err := c.Client.DescribeInstances(input)
 	if err != nil {
 		return fmt.Errorf("Describe running instances: %v", err)
 	}
 
 	list := Instances{}
-	for _, r := range res.Reservations {
+	for _, r := range output.Reservations {
 		for _, i := range r.Instances {
 
 			name := ""
@@ -136,13 +133,13 @@ func (c *EC2) getInstancesByInstanceIds(ids []string) (Instances, error) {
 		InstanceIds: aws.StringSlice(ids),
 	}
 
-	res, err := c.Ec2Client.DescribeInstances(input)
+	output, err := c.Client.DescribeInstances(input)
 	if err != nil {
 		return nil, fmt.Errorf("Describe instances by instance ids: %v", err)
 	}
 
 	list := Instances{}
-	for _, r := range res.Reservations {
+	for _, r := range output.Reservations {
 		for _, i := range r.Instances {
 
 			name := ""
@@ -168,16 +165,12 @@ func (c *EC2) getInstancesByInstanceIds(ids []string) (Instances, error) {
 	return list, nil
 }
 
-func GetConsoleOutput(profile, region, id string) error {
-	c := &EC2{
-		Ec2Client: NewEc2Sess(profile, region),
-	}
-
+func (c *EC2) GetConsoleOutput(id string) error {
 	input := &ec2.GetConsoleOutputInput{
 		InstanceId: aws.String(id),
 	}
 
-	output, err := c.Ec2Client.GetConsoleOutput(input)
+	output, err := c.Client.GetConsoleOutput(input)
 	if err != nil {
 		return fmt.Errorf("Get console output: %v", err)
 	}

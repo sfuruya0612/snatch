@@ -9,6 +9,19 @@ import (
 	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// ElastiCache client struct
+type ElastiCache struct {
+	Client *elasticache.ElastiCache
+}
+
+// NewElastiCacheSess return ElastiCache struct initialized
+func NewElastiCacheSess(profile, region string) *ElastiCache {
+	return &ElastiCache{
+		Client: elasticache.New(getSession(profile, region)),
+	}
+}
+
+// CacheNode elasticache cachenode struct
 type CacheNode struct {
 	Name               string
 	CacheNodeType      string
@@ -23,29 +36,27 @@ type CacheNode struct {
 	CurrentRole        string
 }
 
+// CacheNodes CacheNode struct slice
 type CacheNodes []CacheNode
 
+// GroupNode elasticache groupnode struct
 type GroupNode struct {
 	Name string
 }
 
+// GroupNodes GroupNode struct slice
 type GroupNodes []GroupNode
 
-func newElasticacheSess(profile string, region string) *elasticache.ElastiCache {
-	sess := getSession(profile, region)
-	return elasticache.New(sess)
-}
+func (c *ElastiCache) DescribeCacheClusters() error {
+	input := &elasticache.DescribeCacheClustersInput{}
 
-func DescribeCacheClusters(profile string, region string) error {
-	svc := newElasticacheSess(profile, region)
-
-	res, err := svc.DescribeCacheClusters(nil)
+	output, err := c.Client.DescribeCacheClusters(input)
 	if err != nil {
-		return fmt.Errorf("Describe running nodes: %v", err)
+		return fmt.Errorf("Describe running cluster: %v", err)
 	}
 
 	list := CacheNodes{}
-	for _, i := range res.CacheClusters {
+	for _, i := range output.CacheClusters {
 		list = append(list, CacheNode{
 			Name:               *i.CacheClusterId,
 			CacheNodeType:      *i.CacheNodeType,
@@ -80,10 +91,10 @@ func DescribeCacheClusters(profile string, region string) error {
 	return nil
 }
 
-func DescribeReplicationGroups(profile string, region string) error {
-	svc := newElasticacheSess(profile, region)
+func (c *ElastiCache) DescribeReplicationGroups() error {
+	input := &elasticache.DescribeReplicationGroupsInput{}
 
-	res, err := svc.DescribeReplicationGroups(nil)
+	output, err := c.Client.DescribeReplicationGroups(input)
 	if err != nil {
 		return fmt.Errorf("Describe running nodes: %v", err)
 	}
@@ -93,7 +104,7 @@ func DescribeReplicationGroups(profile string, region string) error {
 		endpoint string
 		port     string
 	)
-	for _, i := range res.ReplicationGroups {
+	for _, i := range output.ReplicationGroups {
 		if i.ConfigurationEndpoint != nil {
 			endpoint = *i.ConfigurationEndpoint.Address
 			port = strconv.FormatInt(*i.ConfigurationEndpoint.Port, 10)

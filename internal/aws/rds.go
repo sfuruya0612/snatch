@@ -9,6 +9,19 @@ import (
 	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// RDS client struct
+type RDS struct {
+	Client *rds.RDS
+}
+
+// NewRdsSess return RDS struct initialized
+func NewRdsSess(profile, region string) *RDS {
+	return &RDS{
+		Client: rds.New(getSession(profile, region)),
+	}
+}
+
+// DbInstance rds db instance struct
 type DbInstance struct {
 	Name             string
 	DBInstanceClass  string
@@ -19,23 +32,19 @@ type DbInstance struct {
 	EndpointPort     string
 }
 
+// DbInstances DbInstance struct slice
 type DbInstances []DbInstance
 
-func newRdsSess(profile string, region string) *rds.RDS {
-	sess := getSession(profile, region)
-	return rds.New(sess)
-}
+func (c *RDS) DescribeDBInstances() error {
+	input := &rds.DescribeDBInstancesInput{}
 
-func DescribeDBInstances(profile string, region string) error {
-	rds := newRdsSess(profile, region)
-
-	res, err := rds.DescribeDBInstances(nil)
+	output, err := c.Client.DescribeDBInstances(input)
 	if err != nil {
 		return fmt.Errorf("Describe running instances: %v", err)
 	}
 
 	list := DbInstances{}
-	for _, i := range res.DBInstances {
+	for _, i := range output.DBInstances {
 		port := strconv.FormatInt(*i.Endpoint.Port, 10)
 
 		list = append(list, DbInstance{

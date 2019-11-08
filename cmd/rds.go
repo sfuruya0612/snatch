@@ -13,8 +13,8 @@ func ListRds(c *cli.Context) error {
 
 	fmt.Printf("\x1b[32mAWS_PROFILE: %s , REGION: %s\x1b[0m\n", profile, region)
 
-	err := aws.DescribeDBInstances(profile, region)
-	if err != nil {
+	rds := aws.NewRdsSess(profile, region)
+	if err := rds.DescribeDBInstances(); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

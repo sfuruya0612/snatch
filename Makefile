@@ -9,13 +9,17 @@ MODULE := github.com/sfuruya0612/${NAME}
 AWS_PROFILE := default
 REGION := ap-northeast-1
 
-install:
+.PHONY: test
+test:
+	go test -v --cover ./...
+
+install: test
 	-rm ${GOPATH}/bin/${NAME}
 	go mod tidy
 	go install -ldflags "${LDFLAGS}" ${MODULE}
 
 .PHONY: build
-build:
+build: test
 	-rm -rf build
 	mkdir build
 
