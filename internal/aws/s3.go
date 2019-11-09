@@ -10,29 +10,36 @@ import (
 	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// S3 client struct
+type S3 struct {
+	Client *s3.S3
+}
+
+// NewS3Sess return S3 struct initialized
+func NewS3Sess(profile, region string) *S3 {
+	return &S3{
+		Client: s3.New(getSession(profile, region)),
+	}
+}
+
+// Object s3 object struct
 type Object struct {
 	Key          string
 	Size         string
 	LastModified string
 }
 
+// Objects Object struct slice
 type Objects []Object
 
-func newS3Sess(profile, region string) *s3.S3 {
-	sess := getSession(profile, region)
-	return s3.New(sess)
-}
-
-func ListBuckets(profile, region string, flag bool) error {
-	client := newS3Sess(profile, region)
-
-	res, err := client.ListBuckets(nil)
+func (c *S3) ListBuckets(flag bool) error {
+	output, err := c.Client.ListBuckets(nil)
 	if err != nil {
 		return fmt.Errorf("List s3 buckets: %v", err)
 	}
 
 	elements := []string{}
-	for _, r := range res.Buckets {
+	for _, r := range output.Buckets {
 		item := *r.Name
 
 		elements = append(elements, item)
@@ -52,26 +59,25 @@ func ListBuckets(profile, region string, flag bool) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	err = listObjects(client, bucket)
-	if err != nil {
+	if err = c.listObjects(bucket); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func listObjects(client *s3.S3, bucket string) error {
+func (c *S3) listObjects(bucket string) error {
 	input := &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucket),
 	}
 
-	res, err := client.ListObjectsV2(input)
+	output, err := c.Client.ListObjectsV2(input)
 	if err != nil {
 		return fmt.Errorf("List s3 objects: %v", err)
 	}
 
 	list := Objects{}
-	for _, r := range res.Contents {
+	for _, r := range output.Contents {
 
 		size := strconv.FormatInt(*r.Size, 10)
 		lastmod := r.LastModified.String()

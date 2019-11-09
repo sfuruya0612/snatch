@@ -11,7 +11,8 @@ func StartSession(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	if err := aws.StartSession(profile, region); err != nil {
+	ssm := aws.NewSsmSess(profile, region)
+	if err := ssm.StartSession(profile, region); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
@@ -34,7 +35,8 @@ func SendCommand(c *cli.Context) error {
 		return fmt.Errorf("Instance id or tag is required")
 	}
 
-	if err := aws.SendCommand(profile, region, file, id, tag, args); err != nil {
+	ssm := aws.NewSsmSess(profile, region)
+	if err := ssm.SendCommand(file, id, tag, args); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

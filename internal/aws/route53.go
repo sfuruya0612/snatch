@@ -10,6 +10,19 @@ import (
 	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// Route53 client struct
+type Route53 struct {
+	Client *route53.Route53
+}
+
+// NewRoute53Sess return Route53 struct initialized
+func NewRoute53Sess(profile, region string) *Route53 {
+	return &Route53{
+		Client: route53.New(getSession(profile, region)),
+	}
+}
+
+// Record route53 set record struct
 type Record struct {
 	ZoneId      string
 	DomainName  string
@@ -18,23 +31,17 @@ type Record struct {
 	DomainValue string
 }
 
+// Records Record struct slice
 type Records []Record
 
-func newRoute53Sess(profile string, region string) *route53.Route53 {
-	sess := getSession(profile, region)
-	return route53.New(sess)
-}
-
-func ListHostedZones(profile string, region string) error {
-	client := newRoute53Sess(profile, region)
-
-	res, err := client.ListHostedZones(nil)
+func (c *Route53) ListHostedZones() error {
+	zones, err := c.Client.ListHostedZones(nil)
 	if err != nil {
 		return fmt.Errorf("List hostedzones sets: %v", err)
 	}
 
 	list := Records{}
-	for _, h := range res.HostedZones {
+	for _, h := range zones.HostedZones {
 		id := strings.Split(*h.Id, "/")
 		zoneid := id[2]
 
@@ -42,12 +49,12 @@ func ListHostedZones(profile string, region string) error {
 			HostedZoneId: h.Id,
 		}
 
-		rec, err := client.ListResourceRecordSets(input)
+		output, err := c.Client.ListResourceRecordSets(input)
 		if err != nil {
 			return fmt.Errorf("List record sets: %v", err)
 		}
 
-		for _, r := range rec.ResourceRecordSets {
+		for _, r := range output.ResourceRecordSets {
 
 			if r.TTL == nil {
 				r.TTL = aws.Int64(0000)

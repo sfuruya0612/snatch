@@ -8,31 +8,39 @@ import (
 	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// CloudWatchLogs client struct
+type CloudWatchLogs struct {
+	Client *logs.CloudWatchLogs
+}
+
+// NewLogsSess return CloudWatchLogs struct initialized
+func NewLogsSess(profile, region string) *CloudWatchLogs {
+	return &CloudWatchLogs{
+		Client: logs.New(getSession(profile, region)),
+	}
+}
+
+// LogEvent log event struct
 type LogEvent struct {
 	Timestamp string
 	Message   string
 }
 
+// LogEvents LogEvent struct slice
 type LogEvents []LogEvent
 
-const limit = 10
+const limit = 30
 
-func newLogsSess(profile, region string) *logs.CloudWatchLogs {
-	sess := getSession(profile, region)
-	return logs.New(sess)
-}
-
-func DescribeLogGroups(profile, region string, flag bool) error {
-	client := newLogsSess(profile, region)
-
+func (c *CloudWatchLogs) DescribeLogGroups(flag bool) error {
 	input := &logs.DescribeLogGroupsInput{}
-	groups, err := client.DescribeLogGroups(input)
+
+	output, err := c.Client.DescribeLogGroups(input)
 	if err != nil {
 		return fmt.Errorf("Describe log groups: %v", err)
 	}
 
 	elements := []string{}
-	for _, l := range groups.LogGroups {
+	for _, l := range output.LogGroups {
 		item := *l.LogGroupName
 
 		elements = append(elements, item)
@@ -43,26 +51,25 @@ func DescribeLogGroups(profile, region string, flag bool) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	err = describeLogStreams(client, group, flag)
-	if err != nil {
+	if err = c.describeLogStreams(group, flag); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func describeLogStreams(client *logs.CloudWatchLogs, group string, flag bool) error {
+func (c *CloudWatchLogs) describeLogStreams(group string, flag bool) error {
 	input := &logs.DescribeLogStreamsInput{
 		LogGroupName: aws.String(group),
 	}
 
-	streams, err := client.DescribeLogStreams(input)
+	output, err := c.Client.DescribeLogStreams(input)
 	if err != nil {
 		return fmt.Errorf("Describe log streams: %v", err)
 	}
 
 	elements := []string{}
-	for _, l := range streams.LogStreams {
+	for _, l := range output.LogStreams {
 		item := *l.LogStreamName
 
 		elements = append(elements, item)
@@ -74,16 +81,15 @@ func describeLogStreams(client *logs.CloudWatchLogs, group string, flag bool) er
 	}
 
 	// tokenがないと新しいログがとれない様子
-	// err = GetLogEvents(client, group, stream, token, flag)
-	err = GetLogEvents(client, group, stream, flag)
-	if err != nil {
+	// err = GetLogEvents(group, stream, token, flag)
+	if err = c.getLogEvents(group, stream, flag); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func GetLogEvents(client *logs.CloudWatchLogs, group, stream string, flag bool) error {
+func (c *CloudWatchLogs) getLogEvents(group, stream string, flag bool) error {
 	var limit int64 = limit
 
 	input := &logs.GetLogEventsInput{
@@ -92,13 +98,13 @@ func GetLogEvents(client *logs.CloudWatchLogs, group, stream string, flag bool) 
 		Limit:         aws.Int64(limit),
 	}
 
-	events, err := client.GetLogEvents(input)
+	output, err := c.Client.GetLogEvents(input)
 	if err != nil {
 		return fmt.Errorf("Get log events: %v", err)
 	}
 
 	list := LogEvents{}
-	for _, e := range events.Events {
+	for _, e := range output.Events {
 		time := aws.SecondsTimeValue(e.Timestamp)
 		t := time.String()
 

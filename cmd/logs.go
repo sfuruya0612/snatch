@@ -12,8 +12,8 @@ func DescribeLogGroups(c *cli.Context) error {
 	region := c.GlobalString("region")
 	flag := c.GlobalBool("f")
 
-	err := aws.DescribeLogGroups(profile, region, flag)
-	if err != nil {
+	logs := aws.NewLogsSess(profile, region)
+	if err := logs.DescribeLogGroups(flag); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

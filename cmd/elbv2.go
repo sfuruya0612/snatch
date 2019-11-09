@@ -7,12 +7,12 @@ import (
 	"github.com/urfave/cli"
 )
 
-func ListElbv2(c *cli.Context) error {
+func ListElbV2(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	err := aws.DescribeLoadBalancersv2(profile, region)
-	if err != nil {
+	elbv2 := aws.NewElbV2Sess(profile, region)
+	if err := elbv2.DescribeLoadBalancersV2(); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

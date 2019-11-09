@@ -32,7 +32,7 @@ type Balancer struct {
 // Balancers Balancer struct slice
 type Balancers []Balancer
 
-func (c *ELB)DescribeLoadBalancers() error {
+func (c *ELB) DescribeLoadBalancers() error {
 	output, err := c.Client.DescribeLoadBalancers(nil)
 	if err != nil {
 		return fmt.Errorf("No available load balancer: %v", err)

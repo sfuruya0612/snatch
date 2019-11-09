@@ -16,37 +16,34 @@ import (
 
 // SSM client struct
 type SSM struct {
-	SsmClient *ssm.SSM
+	Client *ssm.SSM
 }
 
-//Response sendcommand response struct
+// NewSsmSess return SSM struct initialized
+func NewSsmSess(profile, region string) *SSM {
+	return &SSM{
+		Client: ssm.New(getSession(profile, region)),
+	}
+}
+
+// Response sendcommand response struct
 type Response struct {
 	InstanceId string   `json:"instance_id"`
 	Status     string   `json:"status"`
 	Output     []string `json:"output"`
 }
 
-// NewSsmSess return SSM struct initialized
-func NewSsmSess(profile, region string) *ssm.SSM {
-	sess := getSession(profile, region)
-	return ssm.New(sess)
-}
-
-func StartSession(profile, region string) error {
-	c := &SSM{
-		SsmClient: NewSsmSess(profile, region),
-	}
-
+func (c *SSM) StartSession(profile, region string) error {
 	ids, err := c.listInstanceIds()
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
-	ec2client := NewEc2Sess(profile, region)
+	ec2 := NewEc2Sess(profile, region)
 
 	// ssm.DescribeInstanceInformation では NameTag が取得できない
 	// InstanceId で fileter して ec2.DescribeInstance から取得する
-	list, err := ec2client.getInstancesByInstanceIds(ids)
+	list, err := ec2.getInstancesByInstanceIds(ids)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
@@ -116,7 +113,7 @@ func (c *SSM) listInstanceIds() ([]string, error) {
 		return true
 	}
 
-	if err := c.SsmClient.DescribeInstanceInformationPages(input, output); err != nil {
+	if err := c.Client.DescribeInstanceInformationPages(input, output); err != nil {
 		return nil, fmt.Errorf("Describe instance information: %v", err)
 	}
 
@@ -127,19 +124,19 @@ func (c *SSM) createStartSession(input *ssm.StartSessionInput) (*ssm.StartSessio
 	subctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	sess, err := c.SsmClient.StartSessionWithContext(subctx, input)
+	sess, err := c.Client.StartSessionWithContext(subctx, input)
 	if err != nil {
 		return nil, "", err
 	}
 
-	return sess, c.SsmClient.Endpoint, nil
+	return sess, c.Client.Endpoint, nil
 }
 
 func (c *SSM) deleteStartSession(sessionId string) error {
 	subctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	_, err := c.SsmClient.TerminateSessionWithContext(subctx, &ssm.TerminateSessionInput{SessionId: &sessionId})
+	_, err := c.Client.TerminateSessionWithContext(subctx, &ssm.TerminateSessionInput{SessionId: &sessionId})
 	if err != nil {
 		return err
 	}
@@ -147,11 +144,7 @@ func (c *SSM) deleteStartSession(sessionId string) error {
 	return nil
 }
 
-func SendCommand(profile, region, file, id, tag string, args []string) error {
-	c := &SSM{
-		SsmClient: NewSsmSess(profile, region),
-	}
-
+func (c *SSM) SendCommand(file, id, tag string, args []string) error {
 	param := make(map[string][]*string)
 
 	if len(args) > 0 {
@@ -201,7 +194,7 @@ func SendCommand(profile, region, file, id, tag string, args []string) error {
 		}
 	}
 
-	out, err := c.SsmClient.SendCommand(input)
+	out, err := c.Client.SendCommand(input)
 	if err != nil {
 		return fmt.Errorf("Command send: %v", err)
 	}
@@ -212,7 +205,7 @@ func SendCommand(profile, region, file, id, tag string, args []string) error {
 	}
 
 	for {
-		got, err := c.SsmClient.ListCommandInvocations(get)
+		got, err := c.Client.ListCommandInvocations(get)
 		if err != nil {
 			return fmt.Errorf("List command invocation: %v", err)
 		}

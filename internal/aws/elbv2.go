@@ -8,32 +8,39 @@ import (
 	"github.com/sfuruya0612/snatch/internal/util"
 )
 
-type Balancerv2 struct {
+// ELBV2 client struct
+type ELBV2 struct {
+	Client *elbv2.ELBV2
+}
+
+// NewElbV2Sess return ELBV2 struct initialized
+func NewElbV2Sess(profile, region string) *ELBV2 {
+	return &ELBV2{
+		Client: elbv2.New(getSession(profile, region)),
+	}
+}
+
+// BalancerV2 elb struct
+type BalancerV2 struct {
 	Name    string
 	DNSName string
 	Scheme  string
 	Type    string
 }
 
-type Balancersv2 []Balancerv2
+// BalancersV2 BalancerV2 struct slice
+type BalancersV2 []BalancerV2
 
-func newElbv2Sess(profile string, region string) *elbv2.ELBV2 {
-	sess := getSession(profile, region)
-	return elbv2.New(sess)
-}
-
-func DescribeLoadBalancersv2(profile string, region string) error {
-	elbv2 := newElbv2Sess(profile, region)
-
-	res, err := elbv2.DescribeLoadBalancers(nil)
+func (c *ELBV2) DescribeLoadBalancersV2() error {
+	output, err := c.Client.DescribeLoadBalancers(nil)
 	if err != nil {
 		return fmt.Errorf("No available load balancer: %v", err)
 	}
 
-	list := Balancersv2{}
-	for _, i := range res.LoadBalancers {
+	list := BalancersV2{}
+	for _, i := range output.LoadBalancers {
 
-		list = append(list, Balancerv2{
+		list = append(list, BalancerV2{
 			Name:    *i.LoadBalancerName,
 			DNSName: *i.DNSName,
 			Scheme:  *i.Scheme,
@@ -64,7 +71,7 @@ func DescribeLoadBalancersv2(profile string, region string) error {
 	return nil
 }
 
-func (bal Balancersv2) Name() []string {
+func (bal BalancersV2) Name() []string {
 	name := []string{}
 	for _, i := range bal {
 		name = append(name, i.Name)
@@ -72,7 +79,7 @@ func (bal Balancersv2) Name() []string {
 	return name
 }
 
-func (bal Balancersv2) DNSName() []string {
+func (bal BalancersV2) DNSName() []string {
 	dname := []string{}
 	for _, i := range bal {
 		dname = append(dname, i.DNSName)
@@ -80,7 +87,7 @@ func (bal Balancersv2) DNSName() []string {
 	return dname
 }
 
-func (bal Balancersv2) Scheme() []string {
+func (bal BalancersV2) Scheme() []string {
 	scheme := []string{}
 	for _, i := range bal {
 		scheme = append(scheme, i.Scheme)
@@ -88,7 +95,7 @@ func (bal Balancersv2) Scheme() []string {
 	return scheme
 }
 
-func (bal Balancersv2) Type() []string {
+func (bal BalancersV2) Type() []string {
 	t := []string{}
 	for _, i := range bal {
 		t = append(t, i.Type)

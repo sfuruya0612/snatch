@@ -12,8 +12,8 @@ func ListBuckets(c *cli.Context) error {
 	region := c.GlobalString("region")
 	flag := c.Bool("l")
 
-	err := aws.ListBuckets(profile, region, flag)
-	if err != nil {
+	s3 := aws.NewS3Sess(profile, region)
+	if err := s3.ListBuckets(flag); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

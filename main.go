@@ -106,7 +106,7 @@ func New(date, hash, goversion string) *cli.App {
 		{
 			Name:   "elbv2",
 			Usage:  "Get a list of ELB(Application & Network) resources",
-			Action: cmd.ListElbv2,
+			Action: cmd.ListElbV2,
 		},
 		{
 			Name:   "route53",
