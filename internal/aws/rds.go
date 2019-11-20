@@ -27,6 +27,7 @@ type DbInstance struct {
 	DBInstanceClass  string
 	Engine           string
 	EngineVersion    string
+	Storage          string
 	DBInstanceStatus string
 	Endpoint         string
 	EndpointPort     string
@@ -47,11 +48,14 @@ func (c *RDS) DescribeDBInstances() error {
 	for _, i := range output.DBInstances {
 		port := strconv.FormatInt(*i.Endpoint.Port, 10)
 
+		storage := strconv.FormatInt(*i.AllocatedStorage, 10) + "GB"
+
 		list = append(list, DbInstance{
 			Name:             *i.DBInstanceIdentifier,
 			DBInstanceClass:  *i.DBInstanceClass,
 			Engine:           *i.Engine,
 			EngineVersion:    *i.EngineVersion,
+			Storage:          storage,
 			DBInstanceStatus: *i.DBInstanceStatus,
 			Endpoint:         *i.Endpoint.Address,
 			EndpointPort:     port,
@@ -62,6 +66,7 @@ func (c *RDS) DescribeDBInstances() error {
 		list.DBInstanceClass(),
 		list.Engine(),
 		list.EngineVersion(),
+		list.Storage(),
 		list.DBInstanceStatus(),
 		list.Endpoint(),
 		list.EndpointPort(),
@@ -78,6 +83,7 @@ func (c *RDS) DescribeDBInstances() error {
 			i.DBInstanceClass,
 			i.Engine,
 			i.EngineVersion,
+			i.Storage,
 			i.DBInstanceStatus,
 			i.Endpoint,
 			i.EndpointPort,
@@ -117,6 +123,14 @@ func (dins DbInstances) EngineVersion() []string {
 		egv = append(egv, i.EngineVersion)
 	}
 	return egv
+}
+
+func (dins DbInstances) Storage() []string {
+	s := []string{}
+	for _, i := range dins {
+		s = append(s, i.Storage)
+	}
+	return s
 }
 
 func (dins DbInstances) DBInstanceStatus() []string {
