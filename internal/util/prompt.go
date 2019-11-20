@@ -8,6 +8,10 @@ import (
 )
 
 func Prompt(elements []string, label string) (string, error) {
+	if len(elements) < 1 {
+		return "", fmt.Errorf("Elements is empty")
+	}
+
 	searcher := func(input string, index int) bool {
 		lower := strings.ToLower(elements[index])
 		return strings.Contains(lower, input)

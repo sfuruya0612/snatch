@@ -34,16 +34,17 @@ const limit = 30
 func (c *CloudWatchLogs) DescribeLogGroups(flag bool) error {
 	input := &logs.DescribeLogGroupsInput{}
 
-	output, err := c.Client.DescribeLogGroups(input)
-	if err != nil {
-		return fmt.Errorf("Describe log groups: %v", err)
+	elements := []string{}
+	output := func(page *logs.DescribeLogGroupsOutput, lastPage bool) bool {
+		for _, i := range page.LogGroups {
+			elements = append(elements, *i.LogGroupName)
+		}
+
+		return true
 	}
 
-	elements := []string{}
-	for _, l := range output.LogGroups {
-		item := *l.LogGroupName
-
-		elements = append(elements, item)
+	if err := c.Client.DescribeLogGroupsPages(input, output); err != nil {
+		return fmt.Errorf("Describe log groups: %v", err)
 	}
 
 	group, err := util.Prompt(elements, "Select Log Group")
@@ -63,16 +64,20 @@ func (c *CloudWatchLogs) describeLogStreams(group string, flag bool) error {
 		LogGroupName: aws.String(group),
 	}
 
-	output, err := c.Client.DescribeLogStreams(input)
-	if err != nil {
-		return fmt.Errorf("Describe log streams: %v", err)
+	elements := []string{}
+	output := func(page *logs.DescribeLogStreamsOutput, lastPage bool) bool {
+		for _, i := range page.LogStreams {
+			// Expired 等で storedBytes が 0 のstream は返さない
+			if *i.StoredBytes != 0 {
+				elements = append(elements, *i.LogStreamName)
+			}
+		}
+
+		return true
 	}
 
-	elements := []string{}
-	for _, l := range output.LogStreams {
-		item := *l.LogStreamName
-
-		elements = append(elements, item)
+	if err := c.Client.DescribeLogStreamsPages(input, output); err != nil {
+		return fmt.Errorf("Describe log streams: %v", err)
 	}
 
 	stream, err := util.Prompt(elements, "Select Log Stream")
@@ -80,8 +85,6 @@ func (c *CloudWatchLogs) describeLogStreams(group string, flag bool) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	// tokenがないと新しいログがとれない様子
-	// err = GetLogEvents(group, stream, token, flag)
 	if err = c.getLogEvents(group, stream, flag); err != nil {
 		return fmt.Errorf("%v", err)
 	}
@@ -98,21 +101,25 @@ func (c *CloudWatchLogs) getLogEvents(group, stream string, flag bool) error {
 		Limit:         aws.Int64(limit),
 	}
 
-	output, err := c.Client.GetLogEvents(input)
-	if err != nil {
+	list := LogEvents{}
+	output := func(page *logs.GetLogEventsOutput, lastPage bool) bool {
+		for _, i := range page.Events {
+			time := aws.SecondsTimeValue(i.Timestamp)
+			t := time.String()
+
+			list = append(list, LogEvent{
+				Timestamp: t,
+				Message:   *i.Message,
+			})
+		}
+
+		return true
+	}
+
+	if err := c.Client.GetLogEventsPages(input, output); err != nil {
 		return fmt.Errorf("Get log events: %v", err)
 	}
 
-	list := LogEvents{}
-	for _, e := range output.Events {
-		time := aws.SecondsTimeValue(e.Timestamp)
-		t := time.String()
-
-		list = append(list, LogEvent{
-			Timestamp: t,
-			Message:   *e.Message,
-		})
-	}
 	f := util.Formatln(
 		list.Timestamp(),
 		list.Message(),
