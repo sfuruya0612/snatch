@@ -44,7 +44,7 @@ func New(date, hash, goversion string) *cli.App {
 			Name:   "profile, p",
 			EnvVar: "AWS_PROFILE",
 			Value:  "default",
-			Usage:  "Aws credential (~/.aws/config) or read AWS_PROFILE environment variable",
+			Usage:  "AWS credential (~/.aws/config) or read AWS_PROFILE environment variable",
 		},
 		cli.StringFlag{
 			Name:  "region, r",

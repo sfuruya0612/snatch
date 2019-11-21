@@ -2,6 +2,10 @@ package aws
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"sort"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	logs "github.com/aws/aws-sdk-go/service/cloudwatchlogs"
@@ -67,11 +71,14 @@ func (c *CloudWatchLogs) describeLogStreams(group string, flag bool) error {
 	elements := []string{}
 	output := func(page *logs.DescribeLogStreamsOutput, lastPage bool) bool {
 		for _, i := range page.LogStreams {
-			// Expired 等で storedBytes が 0 のstream は返さない
+			// StoredBytes が 0 のstream は可視性が下がるので返さない
 			if *i.StoredBytes != 0 {
 				elements = append(elements, *i.LogStreamName)
 			}
 		}
+		sort.Slice(elements, func(i, j int) bool {
+			return elements[i] > elements[j]
+		})
 
 		return true
 	}
@@ -85,8 +92,23 @@ func (c *CloudWatchLogs) describeLogStreams(group string, flag bool) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	if err = c.getLogEvents(group, stream, flag); err != nil {
-		return fmt.Errorf("%v", err)
+	// Ctrl+C で終了
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, os.Interrupt)
+
+	t := time.NewTicker(5 * time.Second)
+	defer t.Stop()
+
+	for {
+		select {
+		case <-sc:
+			fmt.Println("Stop")
+			return nil
+		case <-t.C:
+			if err := c.getLogEvents(group, stream, flag); err != nil {
+				return fmt.Errorf("%v", err)
+			}
+		}
 	}
 
 	return nil
