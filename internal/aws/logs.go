@@ -110,8 +110,6 @@ func (c *CloudWatchLogs) describeLogStreams(group string, flag bool) error {
 			}
 		}
 	}
-
-	return nil
 }
 
 func (c *CloudWatchLogs) getLogEvents(group, stream string, flag bool) error {

@@ -3,7 +3,6 @@ package aws
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -38,28 +37,11 @@ type Instance struct {
 // Instances Instance struct slice
 type Instances []Instance
 
-func (c *EC2) DescribeInstances(tag string) error {
-	input := &ec2.DescribeInstancesInput{}
-
-	if len(tag) > 0 {
-		if !strings.Contains(tag, ":") {
-			return fmt.Errorf("%v", "tag is different (e.g. Name:hogehoge)")
-		}
-
-		spl := strings.Split(tag, ":")
-		if len(spl) == 0 {
-			return fmt.Errorf("parse tag=%s", tag)
-		}
-
-		input.Filters = append(input.Filters, &ec2.Filter{
-			Name:   aws.String("tag:" + spl[0]),
-			Values: []*string{aws.String(spl[1])},
-		})
-	}
-
+// DescribeInstances return error. Print ec2.DescribeInstances
+func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) error {
 	output, err := c.Client.DescribeInstances(input)
 	if err != nil {
-		return fmt.Errorf("Describe running instances: %v", err)
+		return fmt.Errorf("Describe instances: %v", err)
 	}
 
 	list := Instances{}
@@ -169,11 +151,8 @@ func (c *EC2) getInstancesByInstanceIds(ids []string) (Instances, error) {
 	return list, nil
 }
 
-func (c *EC2) GetConsoleOutput(id string) error {
-	input := &ec2.GetConsoleOutputInput{
-		InstanceId: aws.String(id),
-	}
-
+// GetConsoleOutput return error. Print ec2.GetConsoleOutput.Output
+func (c *EC2) GetConsoleOutput(input *ec2.GetConsoleOutputInput) error {
 	output, err := c.Client.GetConsoleOutput(input)
 	if err != nil {
 		return fmt.Errorf("Get console output: %v", err)

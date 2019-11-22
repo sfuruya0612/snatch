@@ -59,7 +59,7 @@ func New(date, hash, goversion string) *cli.App {
 		{
 			Name:   "ec2",
 			Usage:  "Get a list of EC2 resources",
-			Action: cmd.ListEc2,
+			Action: cmd.GetEc2List,
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "tag, t",
@@ -70,7 +70,7 @@ func New(date, hash, goversion string) *cli.App {
 				{
 					Name:   "log",
 					Usage:  "Get the console output for the specified instance",
-					Action: cmd.GetEc2Log,
+					Action: cmd.GetEc2SystemLog,
 					Flags: []cli.Flag{
 						cli.StringFlag{
 							Name:  "instanceid, i",
