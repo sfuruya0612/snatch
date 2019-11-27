@@ -83,7 +83,7 @@ func New(date, hash, goversion string) *cli.App {
 		{
 			Name:   "rds",
 			Usage:  "Get a list of RDS resources",
-			Action: cmd.ListRds,
+			Action: cmd.GetRdsList,
 		},
 		{
 			Name:    "elasticache",
@@ -170,6 +170,12 @@ func New(date, hash, goversion string) *cli.App {
 			Name:   "cfn",
 			Usage:  "Display a list of stacks",
 			Action: cmd.DescribeStacks,
+		},
+		{
+			Name:    "dynamodb",
+			Aliases: []string{"dynamo"},
+			Usage:   "Scan item from DynamoDB table name",
+			Action:  cmd.ScanDb,
 		},
 	}
 

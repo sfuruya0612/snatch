@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 
 	saws "github.com/sfuruya0612/snatch/internal/aws"
+	"github.com/sfuruya0612/snatch/internal/util"
 	"github.com/urfave/cli"
 )
 
@@ -17,15 +19,14 @@ func GetEc2List(c *cli.Context) error {
 	tag := c.String("tag")
 
 	input := &ec2.DescribeInstancesInput{}
-
 	if len(tag) > 0 {
 		if !strings.Contains(tag, ":") {
-			return fmt.Errorf("%v", "tag is different (e.g. Name:hogehoge)")
+			return fmt.Errorf("Tag is different (e.g. Name:hogehoge)")
 		}
 
 		spl := strings.Split(tag, ":")
 		if len(spl) == 0 {
-			return fmt.Errorf("parse tag=%s", tag)
+			return fmt.Errorf("Parse tag=%s", tag)
 		}
 
 		input.Filters = append(input.Filters, &ec2.Filter{
@@ -35,8 +36,13 @@ func GetEc2List(c *cli.Context) error {
 	}
 
 	ec2 := saws.NewEc2Sess(profile, region)
-	if err := ec2.DescribeInstances(input); err != nil {
+	resources, err := ec2.DescribeInstances(input)
+	if err != nil {
 		return fmt.Errorf("%v", err)
+	}
+
+	if err := saws.PrintInstances(os.Stdout, resources); err != nil {
+		return fmt.Errorf("Failed to print resources")
 	}
 
 	return nil
@@ -56,9 +62,17 @@ func GetEc2SystemLog(c *cli.Context) error {
 	}
 
 	ec2 := saws.NewEc2Sess(profile, region)
-	if err := ec2.GetConsoleOutput(input); err != nil {
+	output, err := ec2.GetConsoleOutput(input)
+	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
+
+	d, err := util.DecodeString(*output.Output)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	fmt.Println(d)
 
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/sfuruya0612/snatch/internal/util"
 )
@@ -39,11 +40,15 @@ func (c *SSM) StartSession(profile, region string) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	ec2 := NewEc2Sess(profile, region)
+	ec2client := NewEc2Sess(profile, region)
+
+	ec2input := &ec2.DescribeInstancesInput{
+		InstanceIds: aws.StringSlice(ids),
+	}
 
 	// ssm.DescribeInstanceInformation では NameTag が取得できない
 	// InstanceId で fileter して ec2.DescribeInstance から取得する
-	list, err := ec2.getInstancesByInstanceIds(ids)
+	list, err := ec2client.DescribeInstances(ec2input)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
