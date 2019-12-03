@@ -2,14 +2,13 @@ package aws
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
+	"io"
 	"sort"
-	"time"
+	"strings"
+	"text/tabwriter"
 
 	"github.com/aws/aws-sdk-go/aws"
 	logs "github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/sfuruya0612/snatch/internal/util"
 )
 
 // CloudWatchLogs client struct
@@ -33,94 +32,61 @@ type LogEvent struct {
 // LogEvents LogEvent struct slice
 type LogEvents []LogEvent
 
-const limit = 30
-
-func (c *CloudWatchLogs) DescribeLogGroups(flag bool) error {
-	input := &logs.DescribeLogGroupsInput{}
-
-	elements := []string{}
+// DescribeLogGroups return []string (logs.DescribeLogGroupsOutput.LogGroupName)
+// input logs.DescribeLogGroupsInput
+func (c *CloudWatchLogs) DescribeLogGroups(input *logs.DescribeLogGroupsInput) ([]string, error) {
+	groups := []string{}
 	output := func(page *logs.DescribeLogGroupsOutput, lastPage bool) bool {
 		for _, i := range page.LogGroups {
-			elements = append(elements, *i.LogGroupName)
+			groups = append(groups, *i.LogGroupName)
 		}
 
 		return true
 	}
 
 	if err := c.Client.DescribeLogGroupsPages(input, output); err != nil {
-		return fmt.Errorf("Describe log groups: %v", err)
+		return nil, fmt.Errorf("Describe log groups: %v", err)
 	}
 
-	group, err := util.Prompt(elements, "Select Log Group")
-	if err != nil {
-		return fmt.Errorf("%v", err)
+	if len(groups) == 0 {
+		return nil, fmt.Errorf("No resources")
 	}
 
-	if err = c.describeLogStreams(group, flag); err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	return nil
+	return groups, nil
 }
 
-func (c *CloudWatchLogs) describeLogStreams(group string, flag bool) error {
-	input := &logs.DescribeLogStreamsInput{
-		LogGroupName: aws.String(group),
-	}
-
-	elements := []string{}
+// DescribeLogStreams return []string (logs.DescribeLogStreamsOutput.LogStreamName)
+// input logs.DescribeLogStreamsInput
+func (c *CloudWatchLogs) DescribeLogStreams(input *logs.DescribeLogStreamsInput) ([]string, error) {
+	streams := []string{}
 	output := func(page *logs.DescribeLogStreamsOutput, lastPage bool) bool {
 		for _, i := range page.LogStreams {
 			// StoredBytes が 0 のstream は可視性が下がるので返さない
 			if *i.StoredBytes != 0 {
-				elements = append(elements, *i.LogStreamName)
+				streams = append(streams, *i.LogStreamName)
 			}
 		}
-		sort.Slice(elements, func(i, j int) bool {
-			return elements[i] > elements[j]
+		sort.Slice(streams, func(i, j int) bool {
+			return streams[i] > streams[j]
 		})
 
 		return true
 	}
 
 	if err := c.Client.DescribeLogStreamsPages(input, output); err != nil {
-		return fmt.Errorf("Describe log streams: %v", err)
+		return nil, fmt.Errorf("Describe log streams: %v", err)
 	}
 
-	stream, err := util.Prompt(elements, "Select Log Stream")
-	if err != nil {
-		return fmt.Errorf("%v", err)
+	if len(streams) == 0 {
+		return nil, fmt.Errorf("No resources")
 	}
 
-	// Ctrl+C で終了
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, os.Interrupt)
-
-	t := time.NewTicker(5 * time.Second)
-	defer t.Stop()
-
-	for {
-		select {
-		case <-sc:
-			fmt.Println("Stop")
-			return nil
-		case <-t.C:
-			if err := c.getLogEvents(group, stream, flag); err != nil {
-				return fmt.Errorf("%v", err)
-			}
-		}
-	}
+	return streams, nil
 }
 
-func (c *CloudWatchLogs) getLogEvents(group, stream string, flag bool) error {
-	var limit int64 = limit
-
-	input := &logs.GetLogEventsInput{
-		LogGroupName:  aws.String(group),
-		LogStreamName: aws.String(stream),
-		Limit:         aws.Int64(limit),
-	}
-
+// GetLogEvents return LogEvents
+// input logs.GetLogEventsInput
+func (c *CloudWatchLogs) GetLogEvents(input *logs.GetLogEventsInput) (LogEvents, error) {
 	list := LogEvents{}
 	output := func(page *logs.GetLogEventsOutput, lastPage bool) bool {
 		for _, i := range page.Events {
@@ -137,37 +103,45 @@ func (c *CloudWatchLogs) getLogEvents(group, stream string, flag bool) error {
 	}
 
 	if err := c.Client.GetLogEventsPages(input, output); err != nil {
-		return fmt.Errorf("Get log events: %v", err)
+		return nil, fmt.Errorf("Get log events: %v", err)
 	}
 
-	f := util.Formatln(
-		list.Timestamp(),
-		list.Message(),
-	)
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
 
-	for _, i := range list {
-		fmt.Printf(
-			f,
-			i.Timestamp,
-			i.Message,
-		)
+	return list, nil
+}
+
+func PrintLogEvents(wrt io.Writer, resources LogEvents) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"Timestamp",
+		"Message",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.LogsTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func (event LogEvents) Timestamp() []string {
-	time := []string{}
-	for _, i := range event {
-		time = append(time, i.Timestamp)
+func (i *LogEvent) LogsTabString() string {
+	fields := []string{
+		i.Timestamp,
+		i.Message,
 	}
-	return time
-}
 
-func (event LogEvents) Message() []string {
-	mess := []string{}
-	for _, i := range event {
-		mess = append(mess, i.Message)
-	}
-	return mess
+	return strings.Join(fields, "\t")
 }

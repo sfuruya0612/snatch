@@ -2,12 +2,13 @@ package aws
 
 import (
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
+	"strings"
+	"text/tabwriter"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/sfuruya0612/snatch/internal/util"
 )
 
 // S3 client struct
@@ -32,105 +33,88 @@ type Object struct {
 // Objects Object struct slice
 type Objects []Object
 
-func (c *S3) ListBuckets(flag bool) error {
-	output, err := c.Client.ListBuckets(nil)
+// ListBuckets return []string (s3.ListBuckets.Buckets)
+// input s3.ListBucketsInput
+func (c *S3) ListBuckets(input *s3.ListBucketsInput) ([]string, error) {
+	output, err := c.Client.ListBuckets(input)
 	if err != nil {
-		return fmt.Errorf("List s3 buckets: %v", err)
+		return nil, fmt.Errorf("List buckets: %v", err)
 	}
 
-	elements := []string{}
-	for _, r := range output.Buckets {
-		item := *r.Name
-
-		elements = append(elements, item)
+	buckets := []string{}
+	for _, l := range output.Buckets {
+		name := *l.Name
+		buckets = append(buckets, name)
 	}
 
-	// flagがなければ出力してreturn
-	if !flag {
-		for _, i := range elements {
-			fmt.Printf("%v\n", i)
-		}
-
-		return nil
+	if len(buckets) == 0 {
+		return nil, fmt.Errorf("No resources")
 	}
 
-	bucket, err := util.Prompt(elements, "Select Bucket")
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	if err = c.listObjects(bucket); err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	return nil
+	return buckets, nil
 }
 
-func (c *S3) listObjects(bucket string) error {
-	input := &s3.ListObjectsV2Input{
-		Bucket: aws.String(bucket),
-	}
-
+// ListObjects return Objects
+// input s3.ListObjectsV2Input
+func (c *S3) ListObjects(input *s3.ListObjectsV2Input) (Objects, error) {
 	output, err := c.Client.ListObjectsV2(input)
 	if err != nil {
-		return fmt.Errorf("List s3 objects: %v", err)
+		return nil, fmt.Errorf("List objects: %v", err)
 	}
 
 	list := Objects{}
-	for _, r := range output.Contents {
+	for _, l := range output.Contents {
 
-		size := strconv.FormatInt(*r.Size, 10)
-		lastmod := r.LastModified.String()
+		size := strconv.FormatInt(*l.Size, 10)
 
 		list = append(list, Object{
-			Key:          *r.Key,
+			Key:          *l.Key,
 			Size:         size,
-			LastModified: lastmod,
+			LastModified: l.LastModified.String(),
 		})
 	}
-
-	f := util.Formatln(
-		list.key(),
-		list.size(),
-		list.lastModified(),
-	)
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
 
 	sort.Slice(list, func(i, j int) bool {
 		return list[i].LastModified < list[j].LastModified
 	})
 
-	for _, i := range list {
-		fmt.Printf(
-			f,
-			i.Key,
-			i.Size,
-			i.LastModified,
-		)
+	return list, nil
+}
+
+func PrintObjects(wrt io.Writer, resources Objects) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"Key",
+		"Size",
+		"LastModified",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.S3TabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func (obj Objects) key() []string {
-	key := []string{}
-	for _, i := range obj {
-		key = append(key, i.Key)
+func (i *Object) S3TabString() string {
+	fields := []string{
+		i.Key,
+		i.Size,
+		i.LastModified,
 	}
-	return key
-}
 
-func (obj Objects) size() []string {
-	size := []string{}
-	for _, i := range obj {
-		size = append(size, i.Size)
-	}
-	return size
-}
-
-func (obj Objects) lastModified() []string {
-	lastmod := []string{}
-	for _, i := range obj {
-		lastmod = append(lastmod, i.LastModified)
-	}
-	return lastmod
+	return strings.Join(fields, "\t")
 }

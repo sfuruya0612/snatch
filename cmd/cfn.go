@@ -2,18 +2,25 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/sfuruya0612/snatch/internal/aws"
+	"github.com/aws/aws-sdk-go/service/cloudformation"
+	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/urfave/cli"
 )
 
-func DescribeStacks(c *cli.Context) error {
+func GetStacksList(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	cloudformation := aws.NewCfnSess(profile, region)
-	if err := cloudformation.DescribeStacks(); err != nil {
+	client := saws.NewCfnSess(profile, region)
+	resources, err := client.DescribeStacks(&cloudformation.DescribeStacksInput{})
+	if err != nil {
 		return fmt.Errorf("%v", err)
+	}
+
+	if err := saws.PrintStacks(os.Stdout, resources); err != nil {
+		return fmt.Errorf("Failed to print resources")
 	}
 
 	return nil

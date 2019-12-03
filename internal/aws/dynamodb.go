@@ -18,18 +18,22 @@ func NewDynamoDbSess(profile, region string) *DynamoDB {
 	}
 }
 
-// ListTables return &dynamodb.ListTablesOutput.TableNames
-func (c *DynamoDB) ListTables(input *dynamodb.ListTablesInput) ([]*string, error) {
+// ListTables return []string (dynamodb.ListTablesOutput.TableNames)
+// input dynamodb.ListTablesInput
+func (c *DynamoDB) ListTables(input *dynamodb.ListTablesInput) ([]string, error) {
 	output, err := c.Client.ListTables(input)
 	if err != nil {
 		return nil, fmt.Errorf("List tables: %v", err)
 	}
 
-	tname := output.TableNames
+	tables := []string{}
+	for _, t := range output.TableNames {
+		tables = append(tables, *t)
+	}
 
-	if len(tname) == 0 {
+	if len(tables) == 0 {
 		return nil, fmt.Errorf("No tables")
 	}
 
-	return tname, nil
+	return tables, nil
 }

@@ -35,8 +35,8 @@ func GetEc2List(c *cli.Context) error {
 		})
 	}
 
-	ec2 := saws.NewEc2Sess(profile, region)
-	resources, err := ec2.DescribeInstances(input)
+	client := saws.NewEc2Sess(profile, region)
+	resources, err := client.DescribeInstances(input)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
@@ -61,8 +61,8 @@ func GetEc2SystemLog(c *cli.Context) error {
 		InstanceId: aws.String(id),
 	}
 
-	ec2 := saws.NewEc2Sess(profile, region)
-	output, err := ec2.GetConsoleOutput(input)
+	client := saws.NewEc2Sess(profile, region)
+	output, err := client.GetConsoleOutput(input)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

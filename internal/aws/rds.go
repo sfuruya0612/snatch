@@ -38,7 +38,8 @@ type DBInstance struct {
 // DBInstances DBInstance struct slice
 type DBInstances []DBInstance
 
-// DescribeDBInstances return DBInstances struct input rds.DescribeDBInstancesInput
+// DescribeDBInstances return DBInstances
+// input rds.DescribeDBInstancesInput
 func (c *RDS) DescribeDBInstances(input *rds.DescribeDBInstancesInput) (DBInstances, error) {
 	output, err := c.Client.DescribeDBInstances(input)
 	if err != nil {
@@ -73,7 +74,7 @@ func (c *RDS) DescribeDBInstances(input *rds.DescribeDBInstancesInput) (DBInstan
 	return list, nil
 }
 
-func PrintDBInstances(wrt io.Writer, instances DBInstances) error {
+func PrintDBInstances(wrt io.Writer, resources DBInstances) error {
 	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
 	header := []string{
 		"Name",
@@ -90,8 +91,8 @@ func PrintDBInstances(wrt io.Writer, instances DBInstances) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	for _, instance := range instances {
-		if _, err := fmt.Fprintln(w, instance.RdsTabString()); err != nil {
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.RdsTabString()); err != nil {
 			return fmt.Errorf("%v", err)
 		}
 	}

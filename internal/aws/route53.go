@@ -2,12 +2,13 @@ package aws
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/sfuruya0612/snatch/internal/util"
 )
 
 // Route53 client struct
@@ -34,24 +35,26 @@ type Record struct {
 // Records Record struct slice
 type Records []Record
 
-func (c *Route53) ListHostedZones() error {
-	zones, err := c.Client.ListHostedZones(nil)
+// ListHostedZones return Records
+// input route53.ListHostedZonesInput
+func (c *Route53) ListHostedZones(input *route53.ListHostedZonesInput) (Records, error) {
+	zones, err := c.Client.ListHostedZones(input)
 	if err != nil {
-		return fmt.Errorf("List hostedzones sets: %v", err)
+		return nil, fmt.Errorf("List hostedzones: %v", err)
 	}
 
 	list := Records{}
 	for _, h := range zones.HostedZones {
-		id := strings.Split(*h.Id, "/")
-		zoneid := id[2]
+		s := strings.Split(*h.Id, "/")
+		zoneid := s[2]
 
-		input := &route53.ListResourceRecordSetsInput{
+		rinput := &route53.ListResourceRecordSetsInput{
 			HostedZoneId: h.Id,
 		}
 
-		output, err := c.Client.ListResourceRecordSets(input)
+		output, err := c.Client.ListResourceRecordSets(rinput)
 		if err != nil {
-			return fmt.Errorf("List record sets: %v", err)
+			return nil, fmt.Errorf("List resource record sets: %v", err)
 		}
 
 		for _, r := range output.ResourceRecordSets {
@@ -83,64 +86,48 @@ func (c *Route53) ListHostedZones() error {
 			})
 		}
 	}
-	f := util.Formatln(
-		list.ZoneId(),
-		list.DomainName(),
-		list.Type(),
-		list.TTL(),
-		list.DomainValue(),
-	)
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
 
-	for _, i := range list {
-		fmt.Printf(
-			f,
-			i.ZoneId,
-			i.DomainName,
-			i.Type,
-			i.TTL,
-			i.DomainValue,
-		)
+	return list, nil
+}
+
+func PrintRecords(wrt io.Writer, resources Records) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"ZoneId",
+		"DomainName",
+		"Type",
+		"TTL",
+		"DomainValue",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.RecordTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func (rec Records) ZoneId() []string {
-	zid := []string{}
-	for _, i := range rec {
-		zid = append(zid, i.ZoneId)
+func (i *Record) RecordTabString() string {
+	fields := []string{
+		i.ZoneId,
+		i.DomainName,
+		i.Type,
+		i.TTL,
+		i.DomainValue,
 	}
-	return zid
-}
 
-func (rec Records) DomainName() []string {
-	dname := []string{}
-	for _, i := range rec {
-		dname = append(dname, i.DomainName)
-	}
-	return dname
-
-}
-func (rec Records) Type() []string {
-	ty := []string{}
-	for _, i := range rec {
-		ty = append(ty, i.Type)
-	}
-	return ty
-}
-
-func (rec Records) TTL() []string {
-	ttl := []string{}
-	for _, i := range rec {
-		ttl = append(ttl, i.TTL)
-	}
-	return ttl
-}
-
-func (rec Records) DomainValue() []string {
-	dvalue := []string{}
-	for _, i := range rec {
-		dvalue = append(dvalue, i.DomainValue)
-	}
-	return dvalue
+	return strings.Join(fields, "\t")
 }

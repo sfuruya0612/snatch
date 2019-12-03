@@ -89,39 +89,39 @@ func New(date, hash, goversion string) *cli.App {
 			Name:    "elasticache",
 			Aliases: []string{"ec"},
 			Usage:   "Get a list of ElastiCache Cluster resources",
-			Action:  cmd.ListElasticache,
+			Action:  cmd.GetEcClusterList,
 			Subcommands: []cli.Command{
 				{
 					Name:   "node",
 					Usage:  "Get a list of ElastiCache Node resources",
-					Action: cmd.ListReplicationGroups,
+					Action: cmd.GetEcGroupsList,
 				},
 			},
 		},
 		{
 			Name:   "elb",
 			Usage:  "Get a list of ELB(Classic) resources.",
-			Action: cmd.ListElb,
+			Action: cmd.GetElbList,
 		},
 		{
 			Name:   "elbv2",
 			Usage:  "Get a list of ELB(Application & Network) resources",
-			Action: cmd.ListElbV2,
+			Action: cmd.GetElbV2List,
 		},
 		{
 			Name:   "route53",
 			Usage:  "Get a list of Rotue53 Record resources",
-			Action: cmd.ListHostedZones,
+			Action: cmd.GetRecordsList,
 		},
 		{
 			Name:   "acm",
 			Usage:  "Get a list of ACM resources",
-			Action: cmd.ListCertificates,
+			Action: cmd.GetCertificatesList,
 		},
 		{
 			Name:   "s3",
 			Usage:  "Get Objects in selected S3 Bucket at interactive prompt",
-			Action: cmd.ListBuckets,
+			Action: cmd.GetS3List,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "l",
@@ -158,7 +158,7 @@ func New(date, hash, goversion string) *cli.App {
 		{
 			Name:   "logs",
 			Usage:  "Display messages for selected log groups and streams at interactive prompt",
-			Action: cmd.DescribeLogGroups,
+			Action: cmd.GetCloudWatchLogs,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "f",
@@ -169,13 +169,13 @@ func New(date, hash, goversion string) *cli.App {
 		{
 			Name:   "cfn",
 			Usage:  "Display a list of stacks",
-			Action: cmd.DescribeStacks,
+			Action: cmd.GetStacksList,
 		},
 		{
 			Name:    "dynamodb",
 			Aliases: []string{"dynamo"},
 			Usage:   "Scan item from DynamoDB table name",
-			Action:  cmd.ScanDb,
+			Action:  cmd.GetTablesList,
 		},
 	}
 

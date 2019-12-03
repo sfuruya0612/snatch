@@ -13,10 +13,8 @@ func GetRdsList(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	input := &rds.DescribeDBInstancesInput{}
-
-	rds := saws.NewRdsSess(profile, region)
-	resources, err := rds.DescribeDBInstances(input)
+	client := saws.NewRdsSess(profile, region)
+	resources, err := client.DescribeDBInstances(&rds.DescribeDBInstancesInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

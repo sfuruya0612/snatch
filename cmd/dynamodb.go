@@ -8,19 +8,17 @@ import (
 	"github.com/urfave/cli"
 )
 
-func ScanDb(c *cli.Context) error {
+func GetTablesList(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	input := &dynamodb.ListTablesInput{}
-
-	dynamodb := saws.NewDynamoDbSess(profile, region)
-	tname, err := dynamodb.ListTables(input)
+	client := saws.NewDynamoDbSess(profile, region)
+	tables, err := client.ListTables(&dynamodb.ListTablesInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
-	fmt.Println(tname)
+	fmt.Println(tables)
 
 	return nil
 }

@@ -38,7 +38,8 @@ type Instance struct {
 // Instances Instance struct slice
 type Instances []Instance
 
-// DescribeInstances return Instances struct input ec2.DescribeInstancesInput
+// DescribeInstances return Instances
+// input ec2.DescribeInstancesInput
 func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, error) {
 	output, err := c.Client.DescribeInstances(input)
 	if err != nil {
@@ -48,7 +49,6 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, e
 	list := Instances{}
 	for _, r := range output.Reservations {
 		for _, i := range r.Instances {
-
 			name := ""
 			for _, t := range i.Tags {
 				if *t.Key == "Name" {
@@ -95,7 +95,8 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, e
 	return list, nil
 }
 
-// GetConsoleOutput return ec2.GetConsoleOutput input ec2.GetConsoleOutputInput
+// GetConsoleOutput return ec2.GetConsoleOutputOutput
+// input ec2.GetConsoleOutputInput
 func (c *EC2) GetConsoleOutput(input *ec2.GetConsoleOutputInput) (*ec2.GetConsoleOutputOutput, error) {
 	output, err := c.Client.GetConsoleOutput(input)
 	if err != nil {
@@ -105,7 +106,7 @@ func (c *EC2) GetConsoleOutput(input *ec2.GetConsoleOutputInput) (*ec2.GetConsol
 	return output, nil
 }
 
-func PrintInstances(wrt io.Writer, instances Instances) error {
+func PrintInstances(wrt io.Writer, resources Instances) error {
 	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
 	header := []string{
 		"Name",
@@ -123,8 +124,8 @@ func PrintInstances(wrt io.Writer, instances Instances) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	for _, instance := range instances {
-		if _, err := fmt.Fprintln(w, instance.Ec2TabString()); err != nil {
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.Ec2TabString()); err != nil {
 			return fmt.Errorf("%v", err)
 		}
 	}

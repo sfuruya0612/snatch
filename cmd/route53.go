@@ -2,18 +2,25 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/sfuruya0612/snatch/internal/aws"
+	"github.com/aws/aws-sdk-go/service/route53"
+	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/urfave/cli"
 )
 
-func ListHostedZones(c *cli.Context) error {
+func GetRecordsList(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	route53 := aws.NewRoute53Sess(profile, region)
-	if err := route53.ListHostedZones(); err != nil {
+	client := saws.NewRoute53Sess(profile, region)
+	resources, err := client.ListHostedZones(&route53.ListHostedZonesInput{})
+	if err != nil {
 		return fmt.Errorf("%v", err)
+	}
+
+	if err := saws.PrintRecords(os.Stdout, resources); err != nil {
+		return fmt.Errorf("Failed to print resources")
 	}
 
 	return nil

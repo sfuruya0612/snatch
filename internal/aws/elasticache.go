@@ -2,11 +2,13 @@ package aws
 
 import (
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
+	"strings"
+	"text/tabwriter"
 
 	"github.com/aws/aws-sdk-go/service/elasticache"
-	"github.com/sfuruya0612/snatch/internal/util"
 )
 
 // ElastiCache client struct
@@ -31,28 +33,20 @@ type CacheNode struct {
 	Status             string
 	Endpoint           string
 	Port               string
-	CacheClusterID     string
-	CacheNodeID        string
+	CacheClusterId     string
+	CacheNodeId        string
 	CurrentRole        string
 }
 
 // CacheNodes CacheNode struct slice
 type CacheNodes []CacheNode
 
-// GroupNode elasticache groupnode struct
-type GroupNode struct {
-	Name string
-}
-
-// GroupNodes GroupNode struct slice
-type GroupNodes []GroupNode
-
-func (c *ElastiCache) DescribeCacheClusters() error {
-	input := &elasticache.DescribeCacheClustersInput{}
-
+// DescribeCacheClusters return CacheNodes
+// input elasticache.DescribeCacheClustersInput
+func (c *ElastiCache) DescribeCacheClusters(input *elasticache.DescribeCacheClustersInput) (CacheNodes, error) {
 	output, err := c.Client.DescribeCacheClusters(input)
 	if err != nil {
-		return fmt.Errorf("Describe running cluster: %v", err)
+		return nil, fmt.Errorf("Describe cache cluster: %v", err)
 	}
 
 	list := CacheNodes{}
@@ -65,46 +59,32 @@ func (c *ElastiCache) DescribeCacheClusters() error {
 			CacheClusterStatus: *i.CacheClusterStatus,
 		})
 	}
-	f := util.Formatln(
-		list.Name(),
-		list.CacheNodeType(),
-		list.Engine(),
-		list.EngineVersion(),
-		list.CacheClusterStatus(),
-	)
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
 
 	sort.Slice(list, func(i, j int) bool {
 		return list[i].Name < list[j].Name
 	})
 
-	for _, i := range list {
-		fmt.Printf(
-			f,
-			i.Name,
-			i.CacheNodeType,
-			i.Engine,
-			i.EngineVersion,
-			i.CacheClusterStatus,
-		)
-	}
-
-	return nil
+	return list, nil
 }
 
-func (c *ElastiCache) DescribeReplicationGroups() error {
-	input := &elasticache.DescribeReplicationGroupsInput{}
-
+// DescribeReplicationGroups return CacheNodes
+// input elasticache.DescribeCacheClustersInput
+func (c *ElastiCache) DescribeReplicationGroups(input *elasticache.DescribeReplicationGroupsInput) (CacheNodes, error) {
 	output, err := c.Client.DescribeReplicationGroups(input)
 	if err != nil {
-		return fmt.Errorf("Describe running nodes: %v", err)
+		return nil, fmt.Errorf("Describe replication groups: %v", err)
 	}
 
 	list := CacheNodes{}
-	var (
-		endpoint string
-		port     string
-	)
 	for _, i := range output.ReplicationGroups {
+		var (
+			endpoint string
+			port     string
+		)
+
 		if i.ConfigurationEndpoint != nil {
 			endpoint = *i.ConfigurationEndpoint.Address
 			port = strconv.FormatInt(*i.ConfigurationEndpoint.Port, 10)
@@ -117,7 +97,6 @@ func (c *ElastiCache) DescribeReplicationGroups() error {
 			}
 
 			for _, nm := range n.NodeGroupMembers {
-
 				role := "None"
 				if nm.CurrentRole != nil {
 					role = *nm.CurrentRole
@@ -128,128 +107,103 @@ func (c *ElastiCache) DescribeReplicationGroups() error {
 					Status:         *i.Status,
 					Endpoint:       endpoint,
 					Port:           port,
-					CacheClusterID: *nm.CacheClusterId,
-					CacheNodeID:    *nm.CacheNodeId,
+					CacheClusterId: *nm.CacheClusterId,
+					CacheNodeId:    *nm.CacheNodeId,
 					CurrentRole:    role,
 				})
 			}
 		}
 
 	}
-	f := util.Formatln(
-		list.Name(),
-		list.Status(),
-		list.Endpoint(),
-		list.Port(),
-		list.CacheClusterID(),
-		list.CacheNodeID(),
-		list.CurrentRole(),
-	)
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
 
 	sort.Slice(list, func(i, j int) bool {
 		return list[i].Name < list[j].Name
 	})
 
-	for _, i := range list {
-		fmt.Printf(
-			f,
-			i.Name,
-			i.Status,
-			i.Endpoint,
-			i.Port,
-			i.CacheClusterID,
-			i.CacheNodeID,
-			i.CurrentRole,
-		)
+	return list, nil
+}
+
+func PrintCacheClusters(wrt io.Writer, resources CacheNodes) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"Name",
+		"CacheNodeType",
+		"Engine",
+		"EngineVersion",
+		"CacheClusterStatus",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.CcTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func (cn CacheNodes) Name() []string {
-	name := []string{}
-	for _, i := range cn {
-		name = append(name, i.Name)
+func (i *CacheNode) CcTabString() string {
+	fields := []string{
+		i.Name,
+		i.CacheNodeType,
+		i.Engine,
+		i.EngineVersion,
+		i.CacheClusterStatus,
 	}
-	return name
+
+	return strings.Join(fields, "\t")
 }
 
-func (cn CacheNodes) CacheNodeType() []string {
-	ty := []string{}
-	for _, i := range cn {
-		ty = append(ty, i.CacheNodeType)
+func PrintRepricationGroups(wrt io.Writer, resources CacheNodes) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"Name",
+		"Status",
+		"Endpoint",
+		"Port",
+		"CacheClusterId",
+		"CacheNodeId",
+		"CurrentRole",
 	}
-	return ty
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.RgTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	return nil
 }
 
-func (cn CacheNodes) Engine() []string {
-	eg := []string{}
-	for _, i := range cn {
-		eg = append(eg, i.Engine)
+func (i *CacheNode) RgTabString() string {
+	fields := []string{
+		i.Name,
+		i.Status,
+		i.Endpoint,
+		i.Port,
+		i.CacheClusterId,
+		i.CacheNodeId,
+		i.CurrentRole,
 	}
-	return eg
-}
 
-func (cn CacheNodes) EngineVersion() []string {
-	egv := []string{}
-	for _, i := range cn {
-		egv = append(egv, i.EngineVersion)
-	}
-	return egv
-}
-
-func (cn CacheNodes) CacheClusterStatus() []string {
-	st := []string{}
-	for _, i := range cn {
-		st = append(st, i.CacheClusterStatus)
-	}
-	return st
-}
-
-func (cn CacheNodes) Status() []string {
-	st := []string{}
-	for _, i := range cn {
-		st = append(st, i.Status)
-	}
-	return st
-}
-
-func (cn CacheNodes) Endpoint() []string {
-	ep := []string{}
-	for _, i := range cn {
-		ep = append(ep, i.Endpoint)
-	}
-	return ep
-}
-
-func (cn CacheNodes) Port() []string {
-	p := []string{}
-	for _, i := range cn {
-		p = append(p, i.Port)
-	}
-	return p
-}
-
-func (cn CacheNodes) CacheClusterID() []string {
-	cc := []string{}
-	for _, i := range cn {
-		cc = append(cc, i.CacheClusterID)
-	}
-	return cc
-}
-
-func (cn CacheNodes) CacheNodeID() []string {
-	cnid := []string{}
-	for _, i := range cn {
-		cnid = append(cnid, i.CacheNodeID)
-	}
-	return cnid
-}
-
-func (cn CacheNodes) CurrentRole() []string {
-	cr := []string{}
-	for _, i := range cn {
-		cr = append(cr, i.CurrentRole)
-	}
-	return cr
+	return strings.Join(fields, "\t")
 }
