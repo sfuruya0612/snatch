@@ -11,6 +11,7 @@ REGION := ap-northeast-1
 
 .PHONY: test
 test:
+	golangci-lint run
 	go test -v --cover ./...
 
 install: test

@@ -98,6 +98,34 @@ func StartSession(c *cli.Context) error {
 	return nil
 }
 
+func GetSsmHist(c *cli.Context) error {
+	profile := c.GlobalString("profile")
+	region := c.GlobalString("region")
+	flag := c.Bool("active")
+
+	state := "History"
+	if flag {
+		state = "Active"
+	}
+
+	input := &ssm.DescribeSessionsInput{
+		State: aws.String(state),
+	}
+
+	client := saws.NewSsmSess(profile, region)
+
+	hist, err := client.DescribeSessions(input)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	if err := saws.PrintSessHist(os.Stdout, hist); err != nil {
+		return fmt.Errorf("Failed to print resources")
+	}
+
+	return nil
+}
+
 func SendCommand(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
@@ -192,7 +220,28 @@ func SendCommand(c *cli.Context) error {
 			fmt.Printf("%v\n", o)
 		}
 	}
-	// break
+
+	return nil
+}
+
+func GetCmdLog(c *cli.Context) error {
+	profile := c.GlobalString("profile")
+	region := c.GlobalString("region")
+
+	client := saws.NewSsmSess(profile, region)
+
+	input := &ssm.ListCommandsInput{
+		MaxResults: aws.Int64(30),
+	}
+
+	logs, err := client.ListCommands(input)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	if err := saws.PrintCmdLogs(os.Stdout, logs); err != nil {
+		return fmt.Errorf("Failed to print command logs")
+	}
 
 	return nil
 }

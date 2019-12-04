@@ -135,9 +135,22 @@ func New(date, hash, goversion string) *cli.App {
 			Action: cmd.StartSession,
 			Subcommands: []cli.Command{
 				{
-					Name:   "run",
-					Usage:  "Runs commands on one target instance",
-					Action: cmd.SendCommand,
+					Name:    "history",
+					Aliases: []string{"h"},
+					Usage:   "Get session history",
+					Action:  cmd.GetSsmHist,
+					Flags: []cli.Flag{
+						cli.BoolFlag{
+							Name:  "active, a",
+							Usage: "Get Active history",
+						},
+					},
+				},
+				{
+					Name:    "command",
+					Aliases: []string{"cmd"},
+					Usage:   "Runs commands to target instances",
+					Action:  cmd.SendCommand,
 					Flags: []cli.Flag{
 						cli.StringFlag{
 							Name:  "file, f",
@@ -152,12 +165,25 @@ func New(date, hash, goversion string) *cli.App {
 							Usage: "Set EC2 instance id",
 						},
 					},
+					Subcommands: []cli.Command{
+						{
+							Name:   "log",
+							Usage:  "Get send command log",
+							Action: cmd.GetCmdLog,
+							Flags: []cli.Flag{
+								cli.BoolFlag{
+									Name:  "active, a",
+									Usage: "Get Active history",
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		{
 			Name:   "logs",
-			Usage:  "Display messages for selected log groups and streams at interactive prompt",
+			Usage:  "Display messages for selected cloudwatchlog groups and streams at interactive prompt",
 			Action: cmd.GetCloudWatchLogs,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
@@ -167,9 +193,10 @@ func New(date, hash, goversion string) *cli.App {
 			},
 		},
 		{
-			Name:   "cfn",
-			Usage:  "Display a list of stacks",
-			Action: cmd.GetStacksList,
+			Name:    "cloudformation",
+			Aliases: []string{"cfn"},
+			Usage:   "Display a list of stacks",
+			Action:  cmd.GetStacksList,
 		},
 		{
 			Name:    "dynamodb",

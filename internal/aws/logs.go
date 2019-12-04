@@ -40,7 +40,6 @@ func (c *CloudWatchLogs) DescribeLogGroups(input *logs.DescribeLogGroupsInput) (
 		for _, i := range page.LogGroups {
 			groups = append(groups, *i.LogGroupName)
 		}
-
 		return true
 	}
 
