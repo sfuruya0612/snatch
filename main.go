@@ -225,6 +225,38 @@ func New(date, hash, goversion string) *cli.App {
 			Usage:   "Scan item from DynamoDB table name",
 			Action:  cmd.GetTablesList,
 		},
+		{
+			Name:    "autoscaling",
+			Aliases: []string{"as"},
+			Usage:   "Get a list of EC2 AutoScalingGroups",
+			Action:  cmd.GetASGList,
+			Subcommands: []cli.Command{
+				{
+					Name:    "capacity",
+					Aliases: []string{"cap"},
+					Usage:   "Update autoscaling group capacity",
+					Action:  cmd.UpdateCapacity,
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "name",
+							Usage: "Set target autoscaling group name",
+						},
+						cli.Int64Flag{
+							Name:  "disire",
+							Usage: "Set disire capacity",
+						},
+						cli.Int64Flag{
+							Name:  "min",
+							Usage: "Set minimum capacity",
+						},
+						cli.Int64Flag{
+							Name:  "max",
+							Usage: "Set maximum capacity",
+						},
+					},
+				},
+			},
+		},
 	}
 
 	return app

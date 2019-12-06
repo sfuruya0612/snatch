@@ -106,6 +106,8 @@ func (c *EC2) GetConsoleOutput(input *ec2.GetConsoleOutputInput) (*ec2.GetConsol
 	return output, nil
 }
 
+// TerminateInstances return ec2.TerminateInstancesOutput
+// input ec2.TerminateInstancesInput
 func (c *EC2) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error) {
 	output, err := c.Client.TerminateInstances(input)
 	if err != nil {
