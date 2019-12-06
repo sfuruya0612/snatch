@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ssm"
 )
 
@@ -45,7 +46,7 @@ type Response struct {
 // Responses Response struct slice
 type Responses []Response
 
-// CommandLog sendcommand log struct
+// CmdLog sendcommand log struct
 type CmdLog struct {
 	DocumentName      string
 	Commands          string
@@ -54,8 +55,18 @@ type CmdLog struct {
 	RequestedDateTime string
 }
 
-// CommandLogs CommandLog struct slice
+// CmdLogs CommandLog struct slice
 type CmdLogs []CmdLog
+
+// Parameter parameter store struct
+type Parameter struct {
+	Name        string
+	Value       string
+	Description string
+}
+
+// Parameters Parameter struct slice
+type Parameters []Parameter
 
 // DescribeInstanceInformation return []string (ssm.DescribeInstanceInformationOutput.InstanceId)
 // input ssm.DescribeInstanceInformationInput
@@ -258,6 +269,50 @@ func (c *SSM) ListCommands(input *ssm.ListCommandsInput) (CmdLogs, error) {
 	return list, nil
 }
 
+// DescribeParameters return []*ssm.Parameters
+// input ssm.DescribeParametersInput
+func (c *SSM) DescribeParameters(input *ssm.DescribeParametersInput) ([]*ssm.ParameterMetadata, error) {
+	var params []*ssm.ParameterMetadata
+	output := func(page *ssm.DescribeParametersOutput, lastPage bool) bool {
+		params = append(params, page.Parameters...)
+		return true
+	}
+
+	if err := c.Client.DescribeParametersPages(input, output); err != nil {
+		return nil, fmt.Errorf("Describe paramaters: %v", err)
+	}
+
+	if len(params) == 0 {
+		return nil, fmt.Errorf("No parameters")
+	}
+
+	return params, nil
+}
+
+// GetParameter return Parameters
+// input []*ssm.ParameterMetadata
+func (c *SSM) GetParameter(params []*ssm.ParameterMetadata) (Parameters, error) {
+	list := Parameters{}
+	for _, p := range params {
+		input := &ssm.GetParameterInput{
+			Name: aws.String(*p.Name),
+		}
+
+		output, err := c.Client.GetParameter(input)
+		if err != nil {
+			return nil, fmt.Errorf("Get parameter: %v", err)
+		}
+
+		list = append(list, Parameter{
+			Name:        *p.Name,
+			Value:       *output.Parameter.Value,
+			Description: *p.Description,
+		})
+	}
+
+	return list, nil
+}
+
 func PrintSessHist(wrt io.Writer, resources Sessions) error {
 	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
 	header := []string{
@@ -331,6 +386,41 @@ func (i *CmdLog) CmdLogTabString() string {
 		i.Targets,
 		i.Status,
 		i.RequestedDateTime,
+	}
+
+	return strings.Join(fields, "\t")
+}
+
+func PrintParameters(wrt io.Writer, resources Parameters) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"Name",
+		"Value",
+		"Description",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.ParameterTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	return nil
+}
+
+func (i *Parameter) ParameterTabString() string {
+	fields := []string{
+		i.Name,
+		i.Value,
+		i.Description,
 	}
 
 	return strings.Join(fields, "\t")

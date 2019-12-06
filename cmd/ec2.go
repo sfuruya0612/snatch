@@ -17,6 +17,7 @@ func GetEc2List(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 	tag := c.String("tag")
+	short := c.Bool("short")
 
 	input := &ec2.DescribeInstancesInput{}
 	if len(tag) > 0 {
@@ -32,6 +33,13 @@ func GetEc2List(c *cli.Context) error {
 		input.Filters = append(input.Filters, &ec2.Filter{
 			Name:   aws.String("tag:" + spl[0]),
 			Values: []*string{aws.String(spl[1])},
+		})
+	}
+
+	if short {
+		input.Filters = append(input.Filters, &ec2.Filter{
+			Name:   aws.String("instance-state-name"),
+			Values: []*string{aws.String("running")},
 		})
 	}
 
@@ -73,6 +81,32 @@ func GetEc2SystemLog(c *cli.Context) error {
 	}
 
 	fmt.Println(d)
+
+	return nil
+}
+
+func TerminateEc2(c *cli.Context) error {
+	profile := c.GlobalString("profile")
+	region := c.GlobalString("region")
+
+	id := c.String("instanceid")
+	if len(id) == 0 {
+		return fmt.Errorf("--instanceid or -i option is required")
+	}
+
+	input := &ec2.TerminateInstancesInput{
+		InstanceIds: aws.StringSlice([]string{id}),
+	}
+
+	client := saws.NewEc2Sess(profile, region)
+	output, err := client.TerminateInstances(input)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, o := range output.TerminatingInstances {
+		fmt.Printf("\n\x1b[35mInstanceId %v is terminated\x1b[0m", *o.InstanceId)
+	}
 
 	return nil
 }

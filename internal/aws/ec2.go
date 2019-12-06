@@ -106,6 +106,15 @@ func (c *EC2) GetConsoleOutput(input *ec2.GetConsoleOutputInput) (*ec2.GetConsol
 	return output, nil
 }
 
+func (c *EC2) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error) {
+	output, err := c.Client.TerminateInstances(input)
+	if err != nil {
+		return nil, fmt.Errorf("Terminate instances: %v", err)
+	}
+
+	return output, nil
+}
+
 func PrintInstances(wrt io.Writer, resources Instances) error {
 	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
 	header := []string{

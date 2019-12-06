@@ -65,12 +65,27 @@ func New(date, hash, goversion string) *cli.App {
 					Name:  "tag, t",
 					Usage: "The Key-Value of the tag to filter",
 				},
+				cli.BoolFlag{
+					Name:  "short, s",
+					Usage: "Desplay fewer items only running instances (Name, PrivateIP, PublicIP)",
+				},
 			},
 			Subcommands: []cli.Command{
 				{
 					Name:   "log",
 					Usage:  "Get the console output for the specified instance",
 					Action: cmd.GetEc2SystemLog,
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "instanceid, i",
+							Usage: "Set EC2 instance id",
+						},
+					},
+				},
+				{
+					Name:   "terminate",
+					Usage:  "Terminate instance",
+					Action: cmd.TerminateEc2,
 					Flags: []cli.Flag{
 						cli.StringFlag{
 							Name:  "instanceid, i",
@@ -136,7 +151,7 @@ func New(date, hash, goversion string) *cli.App {
 			Subcommands: []cli.Command{
 				{
 					Name:    "history",
-					Aliases: []string{"h"},
+					Aliases: []string{"hist"},
 					Usage:   "Get session history",
 					Action:  cmd.GetSsmHist,
 					Flags: []cli.Flag{
@@ -179,11 +194,17 @@ func New(date, hash, goversion string) *cli.App {
 						},
 					},
 				},
+				{
+					Name:    "parameter",
+					Aliases: []string{"param"},
+					Usage:   "Get parameter store",
+					Action:  cmd.GetParameter,
+				},
 			},
 		},
 		{
 			Name:   "logs",
-			Usage:  "Display messages for selected cloudwatchlog groups and streams at interactive prompt",
+			Usage:  "Display messages for selected cloudwatch log groups and streams at interactive prompt",
 			Action: cmd.GetCloudWatchLogs,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
@@ -195,7 +216,7 @@ func New(date, hash, goversion string) *cli.App {
 		{
 			Name:    "cloudformation",
 			Aliases: []string{"cfn"},
-			Usage:   "Display a list of stacks",
+			Usage:   "Get a list of stacks",
 			Action:  cmd.GetStacksList,
 		},
 		{

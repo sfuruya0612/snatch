@@ -245,3 +245,26 @@ func GetCmdLog(c *cli.Context) error {
 
 	return nil
 }
+
+func GetParameter(c *cli.Context) error {
+	profile := c.GlobalString("profile")
+	region := c.GlobalString("region")
+
+	client := saws.NewSsmSess(profile, region)
+
+	params, err := client.DescribeParameters(&ssm.DescribeParametersInput{})
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	param, err := client.GetParameter(params)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	if err := saws.PrintParameters(os.Stdout, param); err != nil {
+		return fmt.Errorf("Failed to print parameters")
+	}
+
+	return nil
+}
