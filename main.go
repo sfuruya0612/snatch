@@ -238,7 +238,7 @@ func New(date, hash, goversion string) *cli.App {
 					Action:  cmd.UpdateCapacity,
 					Flags: []cli.Flag{
 						cli.StringFlag{
-							Name:  "name",
+							Name:  "name, n",
 							Usage: "Set target autoscaling group name",
 						},
 						cli.Int64Flag{

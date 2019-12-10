@@ -1,7 +1,9 @@
 package util
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/manifoldco/promptui"
@@ -30,4 +32,21 @@ func Prompt(elements []string, label string) (string, error) {
 	}
 
 	return result, nil
+}
+
+func Confirm(element string) bool {
+	fmt.Printf("Choose %v ? (Y/N)", element)
+
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+
+	switch scanner.Text() {
+	case "Y", "y", "YES", "Yes", "yes":
+		return true
+	case "N", "n", "NO", "No", "no":
+		return false
+	}
+
+	fmt.Printf("No match input pattern")
+	return false
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	saws "github.com/sfuruya0612/snatch/internal/aws"
+	"github.com/sfuruya0612/snatch/internal/util"
 	"github.com/urfave/cli"
 )
 
@@ -36,6 +37,25 @@ func UpdateCapacity(c *cli.Context) error {
 	min := c.Int64("min")
 	max := c.Int64("max")
 
+	if len(name) == 0 {
+		return fmt.Errorf("--name or -n option is required")
+	}
+
+	// disire, min, maxの値の関係性を確認
+	if max < min || disire < min || max < disire {
+		return fmt.Errorf("Capacity options number have incorrect relationship")
+	}
+
+	// Capacityに0が指定された場合、警告文を出しておく
+	if disire == 0 || min == 0 || max == 0 {
+		fmt.Printf("\x1b[35mAutoScaling Group capacity is 0\x1b[0m\n")
+	}
+
+	if !util.Confirm(name) {
+		fmt.Printf("\nCancel update autoscaling group: %v\n", name)
+		return nil
+	}
+
 	input := &autoscaling.UpdateAutoScalingGroupInput{
 		AutoScalingGroupName: aws.String(name),
 		DesiredCapacity:      aws.Int64(disire),
@@ -48,7 +68,7 @@ func UpdateCapacity(c *cli.Context) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	fmt.Printf("\n\x1b[35m%v groups is updated\x1b[0m", name)
+	fmt.Printf("\n%v groups is updated\n", name)
 
 	return nil
 }

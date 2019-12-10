@@ -94,6 +94,11 @@ func TerminateEc2(c *cli.Context) error {
 		return fmt.Errorf("--instanceid or -i option is required")
 	}
 
+	if !util.Confirm(id) {
+		fmt.Printf("\nCancel terminate: %v\n", id)
+		return nil
+	}
+
 	input := &ec2.TerminateInstancesInput{
 		InstanceIds: aws.StringSlice([]string{id}),
 	}
@@ -105,7 +110,7 @@ func TerminateEc2(c *cli.Context) error {
 	}
 
 	for _, o := range output.TerminatingInstances {
-		fmt.Printf("\n\x1b[35mInstanceId %v is terminated\x1b[0m", *o.InstanceId)
+		fmt.Printf("\nInstanceId %v is terminated\n", *o.InstanceId)
 	}
 
 	return nil
