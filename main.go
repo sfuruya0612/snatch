@@ -31,7 +31,7 @@ func New(date, hash, goversion string) *cli.App {
 	app.EnableBashCompletion = true
 
 	app.Name = "snatch"
-	app.Usage = "Cli command to get and display Amazon Web Services resources"
+	app.Usage = "Cli command to Amazon Web Services resources"
 
 	if date != "" || hash != "" || goversion != "" {
 		app.Version = fmt.Sprintf("%s %s (Build by: %s)", date, hash, goversion)
@@ -242,8 +242,8 @@ func New(date, hash, goversion string) *cli.App {
 							Usage: "Set target autoscaling group name",
 						},
 						cli.Int64Flag{
-							Name:  "disire",
-							Usage: "Set disire capacity",
+							Name:  "desired",
+							Usage: "Set desired capacity",
 						},
 						cli.Int64Flag{
 							Name:  "min",
@@ -254,6 +254,29 @@ func New(date, hash, goversion string) *cli.App {
 							Usage: "Set maximum capacity",
 						},
 					},
+				},
+			},
+		},
+		{
+			Name:   "iam",
+			Usage:  "Get a list of IAM users",
+			Action: cmd.GetUserList,
+			Subcommands: []cli.Command{
+				{
+					Name:   "role",
+					Usage:  "Get a list of IAM role",
+					Action: cmd.GetRoleList,
+				},
+			},
+		},
+		{
+			Name:   "translate",
+			Usage:  "Translate [ JP -> EN ] or [ EN -> JP ]",
+			Action: cmd.Translate,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "text, t",
+					Usage: "Set translate text (e.g. -t \"Hello world\")",
 				},
 			},
 		},

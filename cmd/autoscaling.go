@@ -33,7 +33,7 @@ func UpdateCapacity(c *cli.Context) error {
 	region := c.GlobalString("region")
 
 	name := c.String("name")
-	disire := c.Int64("disire")
+	desired := c.Int64("desired")
 	min := c.Int64("min")
 	max := c.Int64("max")
 
@@ -41,13 +41,13 @@ func UpdateCapacity(c *cli.Context) error {
 		return fmt.Errorf("--name or -n option is required")
 	}
 
-	// disire, min, maxの値の関係性を確認
-	if max < min || disire < min || max < disire {
+	// desired, min, maxの値の関係性を確認
+	if max < min || desired < min || max < desired {
 		return fmt.Errorf("Capacity options number have incorrect relationship")
 	}
 
 	// Capacityに0が指定された場合、警告文を出しておく
-	if disire == 0 || min == 0 || max == 0 {
+	if desired == 0 || min == 0 || max == 0 {
 		fmt.Printf("\x1b[35mAutoScaling Group capacity is 0\x1b[0m\n")
 	}
 
@@ -58,7 +58,7 @@ func UpdateCapacity(c *cli.Context) error {
 
 	input := &autoscaling.UpdateAutoScalingGroupInput{
 		AutoScalingGroupName: aws.String(name),
-		DesiredCapacity:      aws.Int64(disire),
+		DesiredCapacity:      aws.Int64(desired),
 		MinSize:              aws.Int64(min),
 		MaxSize:              aws.Int64(max),
 	}

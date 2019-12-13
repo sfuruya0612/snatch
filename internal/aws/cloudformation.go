@@ -14,7 +14,7 @@ type CloudFormation struct {
 	Client *cloudformation.CloudFormation
 }
 
-// newCfnSess return CloudFormation struct initialized
+// NewCfnSess return CloudFormation struct initialized
 func NewCfnSess(profile, region string) *CloudFormation {
 	return &CloudFormation{
 		Client: cloudformation.New(getSession(profile, region)),
@@ -33,7 +33,7 @@ type Stack struct {
 type Stacks []Stack
 
 // DescribeStacks return Stacks
-// input logs.DescribeStacksInput
+// input cloudformation.DescribeStacksInput
 func (c *CloudFormation) DescribeStacks(input *cloudformation.DescribeStacksInput) (Stacks, error) {
 	output, err := c.Client.DescribeStacks(input)
 	if err != nil {
