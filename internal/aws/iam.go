@@ -50,9 +50,14 @@ func (c *IAM) ListUsers(input *iam.ListUsersInput) (Users, error) {
 
 	list := Users{}
 	for _, o := range output.Users {
+		usedate := "None"
+		if o.PasswordLastUsed != nil {
+			usedate = o.PasswordLastUsed.String()
+		}
+
 		list = append(list, User{
 			Name:       *o.UserName,
-			PWLastUsed: o.PasswordLastUsed.String(),
+			PWLastUsed: usedate,
 		})
 	}
 

@@ -46,13 +46,27 @@ func UpdateCapacity(c *cli.Context) error {
 		return fmt.Errorf("Capacity options number have incorrect relationship")
 	}
 
+	client := saws.NewAsgSess(profile, region)
+
+	// 実施前のパラメータを取得
+	before, err := client.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
+		AutoScalingGroupNames: aws.StringSlice([]string{name}),
+	})
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	fmt.Printf("Tatget: %v, Terminate Policies: %v\n\n", name, before[0].TerminationPolicies)
+	fmt.Printf("Before Parameters:\n\tDesired: %v, MinSize: %v, MaxSize: %v\n", before[0].Desired, before[0].Min, before[0].Max)
+	fmt.Printf("After  Parameters:\n\tDesired: %v, MinSize: %v, MaxSize: %v\n", desired, min, max)
+
 	// Capacityに0が指定された場合、警告文を出しておく
 	if desired == 0 || min == 0 || max == 0 {
-		fmt.Printf("\x1b[35mAutoScaling Group capacity is 0\x1b[0m\n")
+		fmt.Printf("\n\x1b[35mAutoScaling Group capacity is 0\x1b[0m\n")
 	}
 
 	if !util.Confirm(name) {
-		fmt.Printf("\nCancel update autoscaling group: %v\n", name)
+		fmt.Printf("Cancel update autoscaling group: %v\n", name)
 		return nil
 	}
 
@@ -63,7 +77,6 @@ func UpdateCapacity(c *cli.Context) error {
 		MaxSize:              aws.Int64(max),
 	}
 
-	client := saws.NewAsgSess(profile, region)
 	if err := client.UpdateAutoScalingGroup(input); err != nil {
 		return fmt.Errorf("%v", err)
 	}

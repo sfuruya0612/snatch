@@ -280,6 +280,22 @@ func New(date, hash, goversion string) *cli.App {
 				},
 			},
 		},
+		{
+			Name:    "costexplorer",
+			Aliases: []string{"ce"},
+			Usage:   "Get monthly using cost",
+			Action:  cmd.GetCost,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "start, s",
+					Usage: "Set start date (time format e.g. -s 2019-11-01)",
+				},
+				cli.StringFlag{
+					Name:  "end, e",
+					Usage: "Set end date (time format e.g. -s 2020-01-01)",
+				},
+			},
+		},
 	}
 
 	return app

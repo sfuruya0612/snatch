@@ -127,12 +127,17 @@ func (c *SSM) DescribeSessions(input *ssm.DescribeSessionsInput) (Sessions, erro
 		s := strings.Split(*l.Owner, "/")
 		owner := s[1]
 
+		enddate := "None"
+		if l.EndDate != nil {
+			enddate = l.EndDate.String()
+		}
+
 		list = append(list, Session{
 			SessionId: *l.SessionId,
 			Owner:     owner,
 			Target:    *l.Target,
 			StartDate: l.StartDate.String(),
-			EndDate:   l.EndDate.String(),
+			EndDate:   enddate,
 		})
 	}
 	if len(list) == 0 {
