@@ -14,7 +14,6 @@ import (
 type Language struct {
 	Source string
 	Target string
-	Text   string
 }
 
 func Translate(c *cli.Context) error {
@@ -66,6 +65,14 @@ func chkLanguage(text string) Language {
 			l = Language{
 				Source: "ja",
 				Target: "en",
+			}
+			return l
+		}
+
+		if unicode.In(t, unicode.Hangul) {
+			l = Language{
+				Source: "ko",
+				Target: "ja",
 			}
 			return l
 		}

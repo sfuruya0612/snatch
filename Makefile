@@ -9,17 +9,12 @@ MODULE := github.com/sfuruya0612/${NAME}
 AWS_PROFILE := default
 REGION := ap-northeast-1
 
-.PHONY: test
+.PHONY: test build image
+
 test:
 	golangci-lint run
 	go test -v --cover ./...
 
-install: test
-	-rm ${GOPATH}/bin/${NAME}
-	go mod tidy
-	go install -ldflags "${LDFLAGS}" ${MODULE}
-
-.PHONY: build
 build: test
 	-rm -rf build
 	mkdir build
@@ -34,7 +29,11 @@ build: test
 
 image: build
 	docker-compose build
-	docker images | grep snatch_cli
+
+install: test image
+	-rm ${GOPATH}/bin/${NAME}
+	go mod tidy
+	go install -ldflags "${LDFLAGS}" ${MODULE}
 
 clean:
 	-rm ${GOPATH}/bin/${NAME}
@@ -42,11 +41,11 @@ clean:
 	-docker rmi --force ${NAME}_cli
 
 # Testing
+pip_install:
+	pushd test ; pip install -r requirements.txt; popd
+
 create_stack: pip_install
 	python test/create_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
 
 delete_stack: pip_install
 	python test/delete_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
-
-pip_install:
-	pushd test ; pip install -r requirements.txt; popd

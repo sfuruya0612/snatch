@@ -28,8 +28,7 @@ func ExecCommand(process string, args ...string) error {
 	}()
 	defer close(done)
 
-	err := call.Run()
-	if err != nil {
+	if err := call.Run(); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
