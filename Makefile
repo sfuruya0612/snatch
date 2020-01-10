@@ -30,7 +30,7 @@ build: test
 image: build
 	docker-compose build
 
-install: test image
+install: test
 	-rm ${GOPATH}/bin/${NAME}
 	go mod tidy
 	go install -ldflags "${LDFLAGS}" ${MODULE}
