@@ -32,6 +32,17 @@ type Stack struct {
 // Stacks Stack struct slice
 type Stacks []Stack
 
+// Event cloudformation stack events struct
+type Event struct {
+	Timestamp            string
+	LogicalResourceId    string
+	ResourceStatus       string
+	ResourceStatusReason string
+}
+
+// Events Event struct slice
+type Events []Event
+
 // DescribeStacks return Stacks
 // input cloudformation.DescribeStacksInput
 func (c *CloudFormation) DescribeStacks(input *cloudformation.DescribeStacksInput) (Stacks, error) {
@@ -56,6 +67,33 @@ func (c *CloudFormation) DescribeStacks(input *cloudformation.DescribeStacksInpu
 	}
 	if len(list) == 0 {
 		return nil, fmt.Errorf("No resources")
+	}
+
+	return list, nil
+}
+
+// DescribeStackEvents return Events
+// input cloudformation.DescribeStackEventsInput
+func (c *CloudFormation) DescribeStackEvents(input *cloudformation.DescribeStackEventsInput) (Events, error) {
+	output, err := c.Client.DescribeStackEvents(input)
+	if err != nil {
+		return nil, fmt.Errorf("Describe stack events: %v", err)
+	}
+
+	list := Events{}
+	for _, l := range output.StackEvents {
+
+		reason := "None"
+		if l.ResourceStatusReason != nil {
+			reason = *l.ResourceStatusReason
+		}
+
+		list = append(list, Event{
+			Timestamp:            l.Timestamp.String(),
+			LogicalResourceId:    *l.LogicalResourceId,
+			ResourceStatus:       *l.ResourceStatus,
+			ResourceStatusReason: reason,
+		})
 	}
 
 	return list, nil
@@ -93,6 +131,43 @@ func (i *Stack) StackTabString() string {
 		i.Status,
 		i.CreateDate,
 		i.UpdateDate,
+	}
+
+	return strings.Join(fields, "\t")
+}
+
+func PrintEvents(wrt io.Writer, resources Events) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"Timestamp",
+		"LogicalResourceId",
+		"ResourceStatus",
+		"ResourceStatusReason",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.EventTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	return nil
+}
+
+func (i *Event) EventTabString() string {
+	fields := []string{
+		i.Timestamp,
+		i.LogicalResourceId,
+		i.ResourceStatus,
+		i.ResourceStatusReason,
 	}
 
 	return strings.Join(fields, "\t")

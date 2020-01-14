@@ -218,6 +218,19 @@ func New(date, hash, goversion string) *cli.App {
 			Aliases: []string{"cfn"},
 			Usage:   "Get a list of stacks",
 			Action:  cmd.GetStacksList,
+			Subcommands: []cli.Command{
+				{
+					Name:   "events",
+					Usage:  "Get stack events",
+					Action: cmd.GetStackEvents,
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "name, n",
+							Usage: "Set stack name",
+						},
+					},
+				},
+			},
 		},
 		{
 			Name:    "dynamodb",
