@@ -99,6 +99,16 @@ func (c *CloudFormation) DescribeStackEvents(input *cloudformation.DescribeStack
 	return list, nil
 }
 
+// DeleteStack return none
+// input cloudformation.DeleteStackInput
+func (c *CloudFormation) DeleteStack(input *cloudformation.DeleteStackInput) error {
+	if _, err := c.Client.DeleteStack(input); err != nil {
+		return fmt.Errorf("Delete stack: %v", err)
+	}
+
+	return nil
+}
+
 func PrintStacks(wrt io.Writer, resources Stacks) error {
 	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
 	header := []string{

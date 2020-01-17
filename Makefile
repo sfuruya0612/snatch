@@ -44,8 +44,8 @@ clean:
 pip_install:
 	pushd test ; pip install -r requirements.txt; popd
 
-create_stack: pip_install
-	python test/create_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
+deploy_stack: pip_install
+	python test/deploy_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
 
 delete_stack: pip_install
 	python test/delete_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &

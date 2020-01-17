@@ -325,18 +325,32 @@ Resources:
         SecurityGroupIds:
           - !Ref SecurityGroup
         UserData:
-          Fn::Base64: |
+          Fn::Base64: !Sub |
             #!/bin/sh -x
 
-            apt update
-            apt install --install-recommends linux-generic-hwe-18.04
-            apt upgrade -y
+            apt update -y
+            apt install -y unzip python-pip
+
+            pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+            cp -a /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+            chmod u+x /etc/init.d/cfn-hup
+
+            /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource AutoScalingGroup
 
             reboot
 
   # AutoScalingGroup
   AutoScalingGroup:
     Type: "AWS::AutoScaling::AutoScalingGroup"
+    CreationPolicy:
+      AutoScalingCreationPolicy:
+        MinSuccessfulInstancesPercent: 50
+      ResourceSignal:
+        Count: !Ref InstanceNum
+        Timeout: "PT5M"
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: True
     Properties:
       AvailabilityZones:
         - Fn::Sub:

@@ -230,6 +230,17 @@ func New(date, hash, goversion string) *cli.App {
 						},
 					},
 				},
+				{
+					Name:   "delete",
+					Usage:  "Delete stack",
+					Action: cmd.DeleteStack,
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "name, n",
+							Usage: "Set stack name",
+						},
+					},
+				},
 			},
 		},
 		{
