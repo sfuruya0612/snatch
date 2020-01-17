@@ -48,7 +48,14 @@ func (c *RDS) DescribeDBInstances(input *rds.DescribeDBInstancesInput) (DBInstan
 
 	list := DBInstances{}
 	for _, i := range output.DBInstances {
-		port := strconv.FormatInt(*i.Endpoint.Port, 10)
+		var (
+			addr string = "None"
+			port string = "None"
+		)
+		if i.Endpoint != nil {
+			addr = *i.Endpoint.Address
+			port = strconv.FormatInt(*i.Endpoint.Port, 10)
+		}
 
 		storage := strconv.FormatInt(*i.AllocatedStorage, 10) + "GB"
 
@@ -59,7 +66,7 @@ func (c *RDS) DescribeDBInstances(input *rds.DescribeDBInstancesInput) (DBInstan
 			EngineVersion:    *i.EngineVersion,
 			Storage:          storage,
 			DBInstanceStatus: *i.DBInstanceStatus,
-			Endpoint:         *i.Endpoint.Address,
+			Endpoint:         addr,
 			EndpointPort:     port,
 		})
 	}
