@@ -9,6 +9,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 // S3 client struct
@@ -20,6 +21,18 @@ type S3 struct {
 func NewS3Sess(profile, region string) *S3 {
 	return &S3{
 		Client: s3.New(getSession(profile, region)),
+	}
+}
+
+// S3Downloader client struct
+type S3Downloader struct {
+	Client *s3manager.Downloader
+}
+
+// NewS3DownloaderSess return S3Manager Downloader struct initialized
+func NewS3DownloaderSess(profile, region string) *S3Downloader {
+	return &S3Downloader{
+		Client: s3manager.NewDownloader(getSession(profile, region)),
 	}
 }
 
@@ -82,6 +95,28 @@ func (c *S3) ListObjects(input *s3.ListObjectsV2Input) (Objects, error) {
 	})
 
 	return list, nil
+}
+
+// GetObject return io.ReadCloser
+// input s3.GetObjectInput
+func (c *S3) GetObject(input *s3.GetObjectInput) (io.ReadCloser, error) {
+	output, err := c.Client.GetObject(input)
+	if err != nil {
+		return nil, fmt.Errorf("Get object: %v", err)
+	}
+
+	return output.Body, nil
+}
+
+// Download return int64
+// input io.WriterAt, s3.GetObjectInput
+func (c *S3Downloader) Download(w io.WriterAt, input *s3.GetObjectInput) (int64, error) {
+	output, err := c.Client.Download(w, input)
+	if err != nil {
+		return 0, fmt.Errorf("Get object: %v", err)
+	}
+
+	return output, nil
 }
 
 func PrintObjects(wrt io.Writer, resources Objects) error {

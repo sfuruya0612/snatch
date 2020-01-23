@@ -135,12 +135,49 @@ func New(date, hash, goversion string) *cli.App {
 		},
 		{
 			Name:   "s3",
-			Usage:  "Get Objects in selected S3 Bucket at interactive prompt",
-			Action: cmd.GetS3List,
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "l",
-					Usage: "Get Objects list",
+			Usage:  "Get a list of S3 Buckets",
+			Action: cmd.GetBucketList,
+			Subcommands: []cli.Command{
+				{
+					Name:   "object",
+					Usage:  "Get S3 object list",
+					Action: cmd.GetObjectList,
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "bucket, b",
+							Usage: "Set bucket name",
+						},
+					},
+				},
+				{
+					Name:   "cat",
+					Usage:  "Desplay S3 object file",
+					Action: cmd.CatObject,
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "bucket, b",
+							Usage: "Set bucket name",
+						},
+						cli.StringFlag{
+							Name:  "key, k",
+							Usage: "Set object key",
+						},
+					},
+				},
+				{
+					Name:   "download",
+					Usage:  "Download S3 object file",
+					Action: cmd.DownloadObject,
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "bucket, b",
+							Usage: "Set bucket name",
+						},
+						cli.StringFlag{
+							Name:  "key, k",
+							Usage: "Set object key",
+						},
+					},
 				},
 			},
 		},
