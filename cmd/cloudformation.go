@@ -63,8 +63,13 @@ func DeleteStack(c *cli.Context) error {
 		return fmt.Errorf("--name or -n option is required")
 	}
 
-	input := &cloudformation.DeleteStackInput{
+	input := &cloudformation.DescribeStacksInput{
 		StackName: aws.String(name),
+	}
+
+	client := saws.NewCfnSess(profile, region)
+	if _, err := client.DescribeStacks(input); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	if !util.Confirm(name) {
@@ -72,8 +77,11 @@ func DeleteStack(c *cli.Context) error {
 		return nil
 	}
 
-	client := saws.NewCfnSess(profile, region)
-	if err := client.DeleteStack(input); err != nil {
+	dinput := &cloudformation.DeleteStackInput{
+		StackName: aws.String(name),
+	}
+
+	if err := client.DeleteStack(dinput); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

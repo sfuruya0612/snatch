@@ -19,6 +19,8 @@ build: test
 	-rm -rf build
 	mkdir build
 
+	go mod tidy
+
 	GOOS=linux GOARGH=amd64 go build -ldflags "${LDFLAGS}" ${MODULE}
 	zip build/${NAME}_linux_amd64.zip ${NAME}
 
