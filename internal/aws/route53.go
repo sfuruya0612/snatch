@@ -52,40 +52,43 @@ func (c *Route53) ListHostedZones(input *route53.ListHostedZonesInput) (Records,
 			HostedZoneId: h.Id,
 		}
 
-		output, err := c.Client.ListResourceRecordSets(rinput)
-		if err != nil {
-			return nil, fmt.Errorf("List resource record sets: %v", err)
-		}
+		output := func(page *route53.ListResourceRecordSetsOutput, lastPage bool) bool {
+			for _, r := range page.ResourceRecordSets {
 
-		for _, r := range output.ResourceRecordSets {
+				if r.TTL == nil {
+					r.TTL = aws.Int64(0000)
+				}
+				ttl := strconv.FormatInt(*r.TTL, 10)
 
-			if r.TTL == nil {
-				r.TTL = aws.Int64(0000)
-			}
-			ttl := strconv.FormatInt(*r.TTL, 10)
+				var value string
+				if r.AliasTarget == nil {
+					var values []string
 
-			var value string
-			if r.AliasTarget == nil {
-				var values []string
+					for _, rr := range r.ResourceRecords {
+						values = append(values, *rr.Value)
+					}
 
-				for _, rr := range r.ResourceRecords {
-					values = append(values, *rr.Value)
+					value = strings.Join(values[:], ",")
+				} else if r.ResourceRecords == nil {
+					value = *r.AliasTarget.DNSName
 				}
 
-				value = strings.Join(values[:], ",")
-			} else if r.ResourceRecords == nil {
-				value = *r.AliasTarget.DNSName
+				list = append(list, Record{
+					ZoneId:      zoneid,
+					DomainName:  *r.Name,
+					Type:        *r.Type,
+					TTL:         ttl,
+					DomainValue: value,
+				})
 			}
+			return true
+		}
 
-			list = append(list, Record{
-				ZoneId:      zoneid,
-				DomainName:  *r.Name,
-				Type:        *r.Type,
-				TTL:         ttl,
-				DomainValue: value,
-			})
+		if err := c.Client.ListResourceRecordSetsPages(rinput, output); err != nil {
+			return nil, fmt.Errorf("List resource record sets: %v", err)
 		}
 	}
+
 	if len(list) == 0 {
 		return nil, fmt.Errorf("No resources")
 	}
