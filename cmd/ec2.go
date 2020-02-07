@@ -60,9 +60,9 @@ func GetEc2SystemLog(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	id := c.String("instanceid")
+	id := c.String("id")
 	if len(id) == 0 {
-		return fmt.Errorf("--instanceid or -i option is required")
+		return fmt.Errorf("--id or -i option is required")
 	}
 
 	input := &ec2.GetConsoleOutputInput{
@@ -89,7 +89,7 @@ func TerminateEc2(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	id := c.String("instanceid")
+	id := c.String("id")
 	if len(id) == 0 {
 		return fmt.Errorf("--instanceid or -i option is required")
 	}

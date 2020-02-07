@@ -19,15 +19,12 @@ func GetCost(c *cli.Context) error {
 	end := c.String("end")
 
 	if start == "" || end == "" {
-		y := time.Now().Year()
-		m := time.Now().Month()
-		d := time.Now().Day()
-
-		s := time.Date(y, m, d, 0, 0, 0, 0, time.Local).AddDate(0, -1, 0)
-		e := time.Date(y, m, d, 0, 0, 0, 0, time.Local)
-
 		layout := "2006-01-02"
+
+		s := time.Now().AddDate(0, -1, 0)
 		start = s.Format(layout)
+
+		e := time.Now()
 		end = e.Format(layout)
 	}
 

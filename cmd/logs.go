@@ -16,7 +16,7 @@ import (
 func GetCloudWatchLogs(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
-	// flag := c.GlobalBool("f")
+	// flag := c.GlobalBool("follow")
 
 	client := saws.NewLogsSess(profile, region)
 

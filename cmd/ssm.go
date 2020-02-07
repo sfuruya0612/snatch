@@ -136,7 +136,7 @@ func SendCommand(c *cli.Context) error {
 		return fmt.Errorf("Args or file is required")
 	}
 
-	id := c.String("instanceid")
+	id := c.String("id")
 	tag := c.String("tag")
 	if len(id) == 0 && len(tag) == 0 {
 		return fmt.Errorf("Instance id or tag is required")
