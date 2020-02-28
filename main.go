@@ -52,7 +52,7 @@ func main() {
 		if c, ok := err.(cli.ExitCoder); ok {
 			code = c.ExitCode()
 		}
-		fmt.Printf("Err: %v", err.Error())
+		fmt.Printf("\n\x1b[31mERROR: %v\x1b[0m", err.Error())
 		os.Exit(code)
 	}
 }

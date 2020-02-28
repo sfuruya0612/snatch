@@ -75,6 +75,13 @@ func GetEc2SystemLog(c *cli.Context) error {
 		return fmt.Errorf("%v", err)
 	}
 
+	// 起動してからSystem Log出力されるまで時間差があるので、
+	// Outputがなかったらreturnする
+	if output.Output == nil {
+		fmt.Println("No logs yet")
+		return nil
+	}
+
 	d, err := util.DecodeString(*output.Output)
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -95,7 +102,7 @@ func TerminateEc2(c *cli.Context) error {
 	}
 
 	if !util.Confirm(id) {
-		fmt.Printf("\nCancel terminate: %v\n", id)
+		fmt.Println("\nCancel")
 		return nil
 	}
 

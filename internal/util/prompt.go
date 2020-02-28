@@ -35,7 +35,7 @@ func Prompt(elements []string, label string) (string, error) {
 }
 
 func Confirm(element string) bool {
-	fmt.Printf("\nChoose %v ? (Y/N) ", element)
+	fmt.Printf("Choose %v ? (Y/N) ", element)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
