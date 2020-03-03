@@ -17,7 +17,7 @@ type ACM struct {
 // NewAcmSess return ACM struct initialized
 func NewAcmSess(profile, region string) *ACM {
 	return &ACM{
-		Client: acm.New(getSession(profile, region)),
+		Client: acm.New(GetSession(profile, region)),
 	}
 }
 

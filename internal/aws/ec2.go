@@ -18,7 +18,7 @@ type EC2 struct {
 // NewEc2Sess return EC2 struct initialized
 func NewEc2Sess(profile, region string) *EC2 {
 	return &EC2{
-		Client: ec2.New(getSession(profile, region)),
+		Client: ec2.New(GetSession(profile, region)),
 	}
 }
 

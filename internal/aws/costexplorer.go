@@ -17,7 +17,7 @@ type CostExplorer struct {
 // NewCeSess return CostExplorer struct initialized
 func NewCeSess(profile, region string) *CostExplorer {
 	return &CostExplorer{
-		Client: costexplorer.New(getSession(profile, region)),
+		Client: costexplorer.New(GetSession(profile, region)),
 	}
 }
 

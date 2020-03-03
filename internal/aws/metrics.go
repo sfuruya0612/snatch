@@ -14,7 +14,7 @@ type CloudWatch struct {
 // NewMetricsSess return CloudWatch struct initialized
 func NewMetricsSess(profile, region string) *CloudWatch {
 	return &CloudWatch{
-		Client: cloudwatch.New(getSession(profile, region)),
+		Client: cloudwatch.New(GetSession(profile, region)),
 	}
 }
 

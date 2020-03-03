@@ -19,7 +19,7 @@ type CloudWatchLogs struct {
 // NewLogsSess return CloudWatchLogs struct initialized
 func NewLogsSess(profile, region string) *CloudWatchLogs {
 	return &CloudWatchLogs{
-		Client: logs.New(getSession(profile, region)),
+		Client: logs.New(GetSession(profile, region)),
 	}
 }
 

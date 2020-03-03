@@ -20,7 +20,7 @@ type SSM struct {
 // NewSsmSess return SSM struct initialized
 func NewSsmSess(profile, region string) *SSM {
 	return &SSM{
-		Client: ssm.New(getSession(profile, region)),
+		Client: ssm.New(GetSession(profile, region)),
 	}
 }
 

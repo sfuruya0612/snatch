@@ -19,7 +19,7 @@ type RDS struct {
 // NewRdsSess return RDS struct initialized
 func NewRdsSess(profile, region string) *RDS {
 	return &RDS{
-		Client: rds.New(getSession(profile, region)),
+		Client: rds.New(GetSession(profile, region)),
 	}
 }
 

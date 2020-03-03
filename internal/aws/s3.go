@@ -20,7 +20,7 @@ type S3 struct {
 // NewS3Sess return S3 struct initialized
 func NewS3Sess(profile, region string) *S3 {
 	return &S3{
-		Client: s3.New(getSession(profile, region)),
+		Client: s3.New(GetSession(profile, region)),
 	}
 }
 
@@ -32,7 +32,7 @@ type S3Downloader struct {
 // NewS3DownloaderSess return S3Manager Downloader struct initialized
 func NewS3DownloaderSess(profile, region string) *S3Downloader {
 	return &S3Downloader{
-		Client: s3manager.NewDownloader(getSession(profile, region)),
+		Client: s3manager.NewDownloader(GetSession(profile, region)),
 	}
 }
 

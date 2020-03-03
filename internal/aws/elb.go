@@ -19,7 +19,7 @@ type ELB struct {
 // NewElbSess return ELB struct initialized
 func NewElbSess(profile, region string) *ELB {
 	return &ELB{
-		Client: elb.New(getSession(profile, region)),
+		Client: elb.New(GetSession(profile, region)),
 	}
 }
 
@@ -31,7 +31,7 @@ type ELBV2 struct {
 // NewElbV2Sess return ELBV2 struct initialized
 func NewElbV2Sess(profile, region string) *ELBV2 {
 	return &ELBV2{
-		Client: elbv2.New(getSession(profile, region)),
+		Client: elbv2.New(GetSession(profile, region)),
 	}
 }
 

@@ -19,7 +19,7 @@ type AutoScaling struct {
 // NewAsgSess return AutoScaling struct initialized
 func NewAsgSess(profile, region string) *AutoScaling {
 	return &AutoScaling{
-		Client: autoscaling.New(getSession(profile, region)),
+		Client: autoscaling.New(GetSession(profile, region)),
 	}
 }
 

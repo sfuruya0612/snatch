@@ -18,7 +18,6 @@ var Commands = []cli.Command{
 	commandSsm,
 	commandLogs,
 	commandCloudFormation,
-	commandDynamoDb,
 	commandAutoScaling,
 	commandIam,
 	commandTranslate,
@@ -271,13 +270,6 @@ var commandCloudFormation = cli.Command{
 			},
 		},
 	},
-}
-
-var commandDynamoDb = cli.Command{
-	Name:    "dynamodb",
-	Aliases: []string{"dynamo"},
-	Usage:   "Scan item from DynamoDB table name",
-	Action:  cmd.GetTablesList,
 }
 
 var commandAutoScaling = cli.Command{

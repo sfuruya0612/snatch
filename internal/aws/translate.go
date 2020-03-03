@@ -14,7 +14,7 @@ type Translate struct {
 // NewTransSess return Translate struct initialized
 func NewTransSess(profile, region string) *Translate {
 	return &Translate{
-		Client: translate.New(getSession(profile, region)),
+		Client: translate.New(GetSession(profile, region)),
 	}
 }
 
