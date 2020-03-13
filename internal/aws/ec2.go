@@ -71,6 +71,10 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, e
 				key = *i.KeyName
 			}
 
+			// AvailabilityZoneは末尾(1a, 1c...)のみ取得する
+			spl := strings.Split(*i.Placement.AvailabilityZone, "-")
+			az := spl[2]
+
 			list = append(list, Instance{
 				Name:             name,
 				InstanceId:       *i.InstanceId,
@@ -79,7 +83,7 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, e
 				PublicIpAddress:  pubip,
 				State:            *i.State.Name,
 				KeyName:          key,
-				AvailabilityZone: *i.Placement.AvailabilityZone,
+				AvailabilityZone: az,
 				LaunchTime:       i.LaunchTime.String(),
 			})
 		}
@@ -127,7 +131,7 @@ func PrintInstances(wrt io.Writer, resources Instances) error {
 		"PublicIP",
 		"State",
 		"KeyName",
-		"AvailabilityZone",
+		"AZ",
 		"LaunchTime",
 	}
 
