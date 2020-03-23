@@ -54,12 +54,16 @@ func (c *AutoScaling) DescribeAutoScalingGroups(input *autoscaling.DescribeAutoS
 
 		// LaunchTemplate, LaunchConfiguration, AutoScaling SpotInstanceでそれぞれパラメータが異なるためswitch文で分岐
 		switch {
+		// AutoScaling SpotInstance
 		case i.LaunchConfigurationName == nil && i.LaunchTemplate == nil:
 			launch = *i.MixedInstancesPolicy.LaunchTemplate.LaunchTemplateSpecification.LaunchTemplateName
+		// LaunchConfiguration
 		case i.LaunchTemplate == nil && i.MixedInstancesPolicy == nil:
 			launch = *i.LaunchConfigurationName
+		// LaunchTemplate
 		case i.MixedInstancesPolicy == nil && i.LaunchConfigurationName == nil:
 			launch = *i.LaunchTemplate.LaunchTemplateName
+		// No match launch pattern
 		default:
 			launch = "None"
 		}

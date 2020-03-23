@@ -72,6 +72,13 @@ var commandRds = cli.Command{
 	Name:   "rds",
 	Usage:  "Get a list of RDS resources",
 	Action: cmd.GetRdsList,
+	Subcommands: []cli.Command{
+		{
+			Name:   "cluster",
+			Usage:  "Get a list of RDS Cluster resources",
+			Action: cmd.GetRdsClusterList,
+		},
+	},
 }
 
 var commandElastiCache = cli.Command{

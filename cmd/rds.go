@@ -25,3 +25,21 @@ func GetRdsList(c *cli.Context) error {
 
 	return nil
 }
+
+func GetRdsClusterList(c *cli.Context) error {
+	profile := c.GlobalString("profile")
+	region := c.GlobalString("region")
+
+	client := saws.NewRdsSess(profile, region)
+
+	clusters, err := client.DescribeDBClusters(&rds.DescribeDBClustersInput{})
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	if err := saws.PrintDBClusters(os.Stdout, clusters); err != nil {
+		return fmt.Errorf("Failed to print resources")
+	}
+
+	return nil
+}
