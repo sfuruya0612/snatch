@@ -13,16 +13,14 @@ env:
     - BUILD_GOOS=linux
     - BUILD_GOOS=darwin
 
-install:
-  - go get github.com/golangci/golangci-lint/cmd/golangci-lint
+# install:
+# - if [[ $TRAVIS_GO_VERSION == 1.11.* ]]; then go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.24.0; fi
+# - if [[ $TRAVIS_GO_VERSION != 1.11.* ]]; then go get github.com/golangci/golangci-lint/cmd/golangci-lint; fi
 
 before_script:
   - go version
+  - go env
 
 script:
-  - go build
-  - go fmt ./...
   - go vet ./...
-  - golangci-lint run
-  - make install
-  - snatch -h
+  - go test -v --cover ./...
