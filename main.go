@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-const version = "19.11.1"
+const version = "20.6.1"
 
 var (
 	date      string
