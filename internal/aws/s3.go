@@ -2,129 +2,154 @@ package aws
 
 import (
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
+	"strings"
+	"text/tabwriter"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/sfuruya0612/snatch/internal/util"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
+// S3 client struct
+type S3 struct {
+	Client *s3.S3
+}
+
+// NewS3Sess return S3 struct initialized
+func NewS3Sess(profile, region string) *S3 {
+	return &S3{
+		Client: s3.New(GetSession(profile, region)),
+	}
+}
+
+// S3Downloader client struct
+type S3Downloader struct {
+	Client *s3manager.Downloader
+}
+
+// NewS3DownloaderSess return S3Manager Downloader struct initialized
+func NewS3DownloaderSess(profile, region string) *S3Downloader {
+	return &S3Downloader{
+		Client: s3manager.NewDownloader(GetSession(profile, region)),
+	}
+}
+
+// Object s3 object struct
 type Object struct {
 	Key          string
 	Size         string
 	LastModified string
 }
 
+// Objects Object struct slice
 type Objects []Object
 
-func newS3Sess(profile, region string) *s3.S3 {
-	sess := getSession(profile, region)
-	return s3.New(sess)
+// ListBuckets return []string (s3.ListBuckets.Buckets)
+// input s3.ListBucketsInput
+func (c *S3) ListBuckets(input *s3.ListBucketsInput) ([]string, error) {
+	output, err := c.Client.ListBuckets(input)
+	if err != nil {
+		return nil, fmt.Errorf("List buckets: %v", err)
+	}
+
+	buckets := []string{}
+	for _, l := range output.Buckets {
+		name := *l.Name
+		buckets = append(buckets, name)
+	}
+
+	if len(buckets) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
+
+	return buckets, nil
 }
 
-func ListBuckets(profile, region string, flag bool) error {
-	client := newS3Sess(profile, region)
-
-	res, err := client.ListBuckets(nil)
+// ListObjects return Objects
+// input s3.ListObjectsV2Input
+func (c *S3) ListObjects(input *s3.ListObjectsV2Input) (Objects, error) {
+	output, err := c.Client.ListObjectsV2(input)
 	if err != nil {
-		return fmt.Errorf("List s3 buckets: %v", err)
-	}
-
-	elements := []string{}
-	for _, r := range res.Buckets {
-		item := *r.Name
-
-		elements = append(elements, item)
-	}
-
-	// flagがなければ出力してreturn
-	if !flag {
-		for _, i := range elements {
-			fmt.Printf("%v\n", i)
-		}
-
-		return nil
-	}
-
-	bucket, err := util.Prompt(elements, "Select Bucket")
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	err = listObjects(client, bucket)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	return nil
-}
-
-func listObjects(client *s3.S3, bucket string) error {
-	input := &s3.ListObjectsV2Input{
-		Bucket: aws.String(bucket),
-	}
-
-	res, err := client.ListObjectsV2(input)
-	if err != nil {
-		return fmt.Errorf("List s3 objects: %v", err)
+		return nil, fmt.Errorf("List objects: %v", err)
 	}
 
 	list := Objects{}
-	for _, r := range res.Contents {
+	for _, l := range output.Contents {
 
-		size := strconv.FormatInt(*r.Size, 10)
-		lastmod := r.LastModified.String()
+		size := strconv.FormatInt(*l.Size, 10)
 
 		list = append(list, Object{
-			Key:          *r.Key,
+			Key:          *l.Key,
 			Size:         size,
-			LastModified: lastmod,
+			LastModified: l.LastModified.String(),
 		})
 	}
-
-	f := util.Formatln(
-		list.key(),
-		list.size(),
-		list.lastModified(),
-	)
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
 
 	sort.Slice(list, func(i, j int) bool {
 		return list[i].LastModified < list[j].LastModified
 	})
 
-	for _, i := range list {
-		fmt.Printf(
-			f,
-			i.Key,
-			i.Size,
-			i.LastModified,
-		)
+	return list, nil
+}
+
+// GetObject return io.ReadCloser
+// input s3.GetObjectInput
+func (c *S3) GetObject(input *s3.GetObjectInput) (io.ReadCloser, error) {
+	output, err := c.Client.GetObject(input)
+	if err != nil {
+		return nil, fmt.Errorf("Get object: %v", err)
+	}
+
+	return output.Body, nil
+}
+
+// Download return int64
+// input io.WriterAt, s3.GetObjectInput
+func (c *S3Downloader) Download(w io.WriterAt, input *s3.GetObjectInput) (int64, error) {
+	output, err := c.Client.Download(w, input)
+	if err != nil {
+		return 0, fmt.Errorf("Get object: %v", err)
+	}
+
+	return output, nil
+}
+
+func PrintObjects(wrt io.Writer, resources Objects) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"Key",
+		"Size",
+		"LastModified",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.S3TabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func (obj Objects) key() []string {
-	key := []string{}
-	for _, i := range obj {
-		key = append(key, i.Key)
+func (i *Object) S3TabString() string {
+	fields := []string{
+		i.Key,
+		i.Size,
+		i.LastModified,
 	}
-	return key
-}
 
-func (obj Objects) size() []string {
-	size := []string{}
-	for _, i := range obj {
-		size = append(size, i.Size)
-	}
-	return size
-}
-
-func (obj Objects) lastModified() []string {
-	lastmod := []string{}
-	for _, i := range obj {
-		lastmod = append(lastmod, i.LastModified)
-	}
-	return lastmod
+	return strings.Join(fields, "\t")
 }

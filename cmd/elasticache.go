@@ -2,34 +2,43 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/sfuruya0612/snatch/internal/aws"
+	"github.com/aws/aws-sdk-go/service/elasticache"
+
+	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/urfave/cli"
 )
 
-func ListElasticache(c *cli.Context) error {
+func GetEcClusterList(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	fmt.Printf("\x1b[32mAWS_PROFILE: %s , REGION: %s\x1b[0m\n", profile, region)
-
-	err := aws.DescribeCacheClusters(profile, region)
+	client := saws.NewElastiCacheSess(profile, region)
+	resources, err := client.DescribeCacheClusters(&elasticache.DescribeCacheClustersInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
+	}
+
+	if err := saws.PrintCacheClusters(os.Stdout, resources); err != nil {
+		return fmt.Errorf("Failed to print resources")
 	}
 
 	return nil
 }
 
-func ListReplicationGroups(c *cli.Context) error {
+func GetEcGroupsList(c *cli.Context) error {
 	profile := c.GlobalString("profile")
 	region := c.GlobalString("region")
 
-	fmt.Printf("\x1b[32mAWS_PROFILE: %s , REGION: %s\x1b[0m\n", profile, region)
-
-	err := aws.DescribeReplicationGroups(profile, region)
+	client := saws.NewElastiCacheSess(profile, region)
+	resources, err := client.DescribeReplicationGroups(&elasticache.DescribeReplicationGroupsInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
+	}
+
+	if err := saws.PrintRepricationGroups(os.Stdout, resources); err != nil {
+		return fmt.Errorf("Failed to print resources")
 	}
 
 	return nil

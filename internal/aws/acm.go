@@ -2,11 +2,26 @@ package aws
 
 import (
 	"fmt"
+	"io"
+	"strings"
+	"text/tabwriter"
 
 	"github.com/aws/aws-sdk-go/service/acm"
-	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// ACM client struct
+type ACM struct {
+	Client *acm.ACM
+}
+
+// NewAcmSess return ACM struct initialized
+func NewAcmSess(profile, region string) *ACM {
+	return &ACM{
+		Client: acm.New(GetSession(profile, region)),
+	}
+}
+
+// Certificate acm certicate struct
 type Certificate struct {
 	DomainName string
 	Type       string
@@ -16,104 +31,81 @@ type Certificate struct {
 	// InUseBy    string
 }
 
+// Certificates Certificate struct slice
 type Certificates []Certificate
 
-func newAcmSess(profile string, region string) *acm.ACM {
-	sess := getSession(profile, region)
-	return acm.New(sess)
-}
-
-func ListCertificates(profile string, region string) error {
-	client := newAcmSess(profile, region)
-
-	res, err := client.ListCertificates(nil)
+// ListCertificates return Certificates
+// input acm.ListCertificatesInput
+func (c *ACM) ListCertificates(input *acm.ListCertificatesInput) (Certificates, error) {
+	certs, err := c.Client.ListCertificates(input)
 	if err != nil {
-		return fmt.Errorf("List certificates: %v", err)
+		return nil, fmt.Errorf("List certificates: %v", err)
 	}
 
 	list := Certificates{}
-	for _, l := range res.CertificateSummaryList {
+	for _, l := range certs.CertificateSummaryList {
 
-		input := &acm.DescribeCertificateInput{
+		i := &acm.DescribeCertificateInput{
 			CertificateArn: l.CertificateArn,
 		}
 
-		res, err := client.DescribeCertificate(input)
+		output, err := c.Client.DescribeCertificate(i)
 		if err != nil {
-			return fmt.Errorf("Describe certificate: %v", err)
+			return nil, fmt.Errorf("Describe certificate: %v", err)
 		}
 
-		cert := res.Certificate
-
-		before := cert.NotBefore.String()
-		after := cert.NotAfter.String()
+		cert := output.Certificate
 
 		list = append(list, Certificate{
 			DomainName: *cert.DomainName,
 			Type:       *cert.Type,
 			Status:     *cert.Status,
-			NotBefore:  before,
-			NotAfter:   after,
+			NotBefore:  cert.NotBefore.String(),
+			NotAfter:   cert.NotAfter.String(),
 		})
 	}
-	f := util.Formatln(
-		list.DomainName(),
-		list.Type(),
-		list.Status(),
-		list.NotBefore(),
-		list.NotAfter(),
-	)
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
 
-	for _, i := range list {
-		fmt.Printf(
-			f,
-			i.DomainName,
-			i.Type,
-			i.Status,
-			i.NotBefore,
-			i.NotAfter,
-		)
+	return list, nil
+}
+
+func PrintCertificates(wrt io.Writer, resources Certificates) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"DomainName",
+		"Type",
+		"Status",
+		"NotBefore",
+		"NotAfter",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.CertificateTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func (cert Certificates) DomainName() []string {
-	dname := []string{}
-	for _, i := range cert {
-		dname = append(dname, i.DomainName)
+func (i *Certificate) CertificateTabString() string {
+	fields := []string{
+		i.DomainName,
+		i.Type,
+		i.Status,
+		i.NotBefore,
+		i.NotAfter,
 	}
-	return dname
-}
 
-func (cert Certificates) Type() []string {
-	ty := []string{}
-	for _, i := range cert {
-		ty = append(ty, i.Type)
-	}
-	return ty
-}
-
-func (cert Certificates) Status() []string {
-	status := []string{}
-	for _, i := range cert {
-		status = append(status, i.Status)
-	}
-	return status
-}
-
-func (cert Certificates) NotBefore() []string {
-	before := []string{}
-	for _, i := range cert {
-		before = append(before, i.NotBefore)
-	}
-	return before
-}
-
-func (cert Certificates) NotAfter() []string {
-	after := []string{}
-	for _, i := range cert {
-		after = append(after, i.NotAfter)
-	}
-	return after
+	return strings.Join(fields, "\t")
 }

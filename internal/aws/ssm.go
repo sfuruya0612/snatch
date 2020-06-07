@@ -1,103 +1,76 @@
 package aws
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
+	"io"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ssm"
-	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// SSM client struct
+type SSM struct {
+	Client *ssm.SSM
+}
+
+// NewSsmSess return SSM struct initialized
+func NewSsmSess(profile, region string) *SSM {
+	return &SSM{
+		Client: ssm.New(GetSession(profile, region)),
+	}
+}
+
+// Session ssm session history struct
+type Session struct {
+	SessionId string
+	Owner     string
+	Target    string
+	StartDate string
+	EndDate   string
+}
+
+// Sessions Session struct slice
+type Sessions []Session
+
+// Response sendcommand response struct
 type Response struct {
 	InstanceId string   `json:"instance_id"`
 	Status     string   `json:"status"`
 	Output     []string `json:"output"`
 }
 
-func newSsmSess(profile, region string) *ssm.SSM {
-	sess := getSession(profile, region)
-	return ssm.New(sess)
+// Responses Response struct slice
+type Responses []Response
+
+// CmdLog sendcommand log struct
+type CmdLog struct {
+	DocumentName      string
+	Commands          string
+	Targets           string
+	Status            string
+	RequestedDateTime string
 }
 
-func StartSession(profile, region string) error {
-	client := newSsmSess(profile, region)
+// CmdLogs CommandLog struct slice
+type CmdLogs []CmdLog
 
-	ids, err := listInstanceIds(client)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	// ssm.DescribeInstanceInformation では NameTag が取得できない
-	// InstanceId で fileter して ec2.DescribeInstance から取得する
-	list, err := getInstancesByInstanceIds(profile, region, ids)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	elements := []string{}
-	for _, i := range list {
-		item := i.Name + "\t" + i.InstanceId
-		elements = append(elements, item)
-	}
-
-	instance, err := util.Prompt(elements, "Select Instance")
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	id := strings.Split(instance, "\t")
-
-	input := &ssm.StartSessionInput{
-		Target: aws.String(id[1]),
-	}
-
-	sess, endpoint, err := createStartSession(client, input)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	sessJson, err := util.Marshal(sess)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	paramsJson, err := util.Marshal(input)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	plug, err := exec.LookPath("session-manager-plugin")
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	if err = util.ExecCommand(plug, string(sessJson), region, "StartSession", profile, string(paramsJson), endpoint); err != nil {
-		fmt.Println(err)
-		err := deleteStartSession(client, *sess.SessionId)
-		if err != nil {
-			return fmt.Errorf("%v", err)
-		}
-	}
-
-	return nil
+// Parameter parameter store struct
+type Parameter struct {
+	Name        string
+	Value       string
+	Description string
 }
 
-func listInstanceIds(client *ssm.SSM) ([]string, error) {
-	input := &ssm.DescribeInstanceInformationInput{
-		Filters: []*ssm.InstanceInformationStringFilter{
-			{
-				Key:    aws.String("PingStatus"),
-				Values: []*string{aws.String("Online")},
-			},
-		},
-	}
+// Parameters Parameter struct slice
+type Parameters []Parameter
 
+// DescribeInstanceInformation return []string (ssm.DescribeInstanceInformationOutput.InstanceId)
+// input ssm.DescribeInstanceInformationInput
+func (c *SSM) DescribeInstanceInformation(input *ssm.DescribeInstanceInformationInput) ([]string, error) {
 	ids := []string{}
 	output := func(page *ssm.DescribeInstanceInformationOutput, lastPage bool) bool {
 		for _, i := range page.InstanceInformationList {
@@ -106,113 +79,102 @@ func listInstanceIds(client *ssm.SSM) ([]string, error) {
 		return true
 	}
 
-	err := client.DescribeInstanceInformationPages(input, output)
-	if err != nil {
+	if err := c.Client.DescribeInstanceInformationPages(input, output); err != nil {
 		return nil, fmt.Errorf("Describe instance information: %v", err)
 	}
 
 	return ids, nil
 }
 
-func createStartSession(client *ssm.SSM, input *ssm.StartSessionInput) (*ssm.StartSessionOutput, string, error) {
+// CreateStartSession return ssm.StartSessionOutput, string ()
+// input ssm.DescribeInstanceInformationInput
+func (c *SSM) CreateStartSession(input *ssm.StartSessionInput) (*ssm.StartSessionOutput, string, error) {
 	subctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	sess, err := client.StartSessionWithContext(subctx, input)
+	sess, err := c.Client.StartSessionWithContext(subctx, input)
 	if err != nil {
 		return nil, "", err
 	}
 
-	return sess, client.Endpoint, nil
+	return sess, c.Client.Endpoint, nil
+
 }
 
-func deleteStartSession(client *ssm.SSM, sessionId string) error {
+// DeleteStartSession return none (Only error)
+// input ssm.TerminateSessionInput
+func (c *SSM) DeleteStartSession(input *ssm.TerminateSessionInput) error {
 	subctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	_, err := client.TerminateSessionWithContext(subctx, &ssm.TerminateSessionInput{SessionId: &sessionId})
-	if err != nil {
+	if _, err := c.Client.TerminateSessionWithContext(subctx, input); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func SendCommand(profile, region, file, id, tag string, args []string) error {
-	client := newSsmSess(profile, region)
-
-	param := make(map[string][]*string)
-
-	if len(args) > 0 {
-		command := []*string{
-			aws.String(args[0]),
-		}
-		param["commands"] = command
-	}
-
-	if len(file) > 0 {
-		f, err := os.Open(file)
-		if err != nil {
-			return fmt.Errorf("open file %s: %v", file, err)
-		}
-		defer f.Close()
-
-		command := []*string{}
-		s := bufio.NewScanner(f)
-		for s.Scan() {
-			command = append(command, aws.String(s.Text()))
-		}
-		param["commands"] = command
-	}
-
-	input := &ssm.SendCommandInput{
-		DocumentName:   aws.String("AWS-RunShellScript"),
-		MaxConcurrency: aws.String("25%"),
-		MaxErrors:      aws.String("0"),
-		TimeoutSeconds: aws.Int64(60),
-		Parameters:     param,
-	}
-
-	if len(id) > 0 {
-		input.InstanceIds = []*string{aws.String(id)}
-	}
-
-	if len(tag) > 0 {
-		spl := strings.Split(tag, ":")
-		if len(spl) != 2 {
-			return fmt.Errorf("Parse tag=%s", tag)
-		}
-		input.Targets = []*ssm.Target{
-			{
-				Key:    aws.String("tag:" + spl[0]),
-				Values: []*string{aws.String(spl[1])},
-			},
-		}
-	}
-
-	out, err := client.SendCommand(input)
+// DescribeSessions return Sessions
+// input ssm.DescribeSessionsInput
+func (c *SSM) DescribeSessions(input *ssm.DescribeSessionsInput) (Sessions, error) {
+	output, err := c.Client.DescribeSessions(input)
 	if err != nil {
-		return fmt.Errorf("Command send: %v", err)
+		return nil, fmt.Errorf("Describe sessions: %v", err)
 	}
 
-	get := &ssm.ListCommandInvocationsInput{
-		CommandId: out.Command.CommandId,
-		Details:   aws.Bool(true),
-	}
+	list := Sessions{}
+	for _, l := range output.Sessions {
+		s := strings.Split(*l.Owner, "/")
+		owner := s[1]
 
-	for {
-		got, err := client.ListCommandInvocations(get)
-		if err != nil {
-			return fmt.Errorf("List command invocation: %v", err)
+		enddate := "None"
+		if l.EndDate != nil {
+			enddate = l.EndDate.String()
 		}
 
-		if len(got.CommandInvocations) == 0 {
+		list = append(list, Session{
+			SessionId: *l.SessionId,
+			Owner:     owner,
+			Target:    *l.Target,
+			StartDate: l.StartDate.String(),
+			EndDate:   enddate,
+		})
+	}
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No historys")
+	}
+
+	return list, nil
+}
+
+// SendCommand return ssm.SendCommandOutput
+// input ssm.SendCommandInput
+func (c *SSM) SendCommand(input *ssm.SendCommandInput) (*ssm.SendCommandOutput, error) {
+	output, err := c.Client.SendCommand(input)
+	if err != nil {
+		return nil, fmt.Errorf("Command send: %v", err)
+	}
+
+	return output, nil
+}
+
+// ListCommandInvocations return Responses
+// input ssm.ListCommandInvocationsInput
+func (c *SSM) ListCommandInvocations(input *ssm.ListCommandInvocationsInput) (Responses, error) {
+	resp := Responses{}
+	for {
+		output, err := c.Client.ListCommandInvocations(input)
+		if err != nil {
+			return nil, fmt.Errorf("List command invocation: %v", err)
+		}
+
+		if len(output.CommandInvocations) == 0 {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 
 		inprogress := false
-		for _, ci := range got.CommandInvocations {
+		for _, ci := range output.CommandInvocations {
 			if *ci.Status == "InProgress" {
 				inprogress = true
 				break
@@ -224,8 +186,7 @@ func SendCommand(profile, region, file, id, tag string, args []string) error {
 			continue
 		}
 
-		resp := []Response{}
-		for _, ci := range got.CommandInvocations {
+		for _, ci := range output.CommandInvocations {
 			out := *ci.CommandPlugins[0].Output
 			spl := strings.Split(out, "\n")
 			if len(spl[len(spl)-1]) < 1 {
@@ -245,21 +206,227 @@ func SendCommand(profile, region, file, id, tag string, args []string) error {
 
 			res.Output = spl
 		}
-		json, err := util.JParser(resp)
-		if err != nil {
-			return fmt.Errorf("Json Marshal: %v", err)
-		}
-
-		for r := range json {
-			fmt.Printf("\n\x1b[35mInstance_id:\x1b[0m %v \x1b[35mStatus:\x1b[0m %v\n\x1b[35mOutput:\x1b[0m\n", json[r].Instance_id, json[r].Status)
-
-			for _, o := range json[r].Output {
-				fmt.Printf("%v\n", o)
-			}
-		}
 
 		break
 	}
 
+	return resp, nil
+}
+
+// ListCommands return CmdLogs
+// input ssm.ListCommandsInput
+func (c *SSM) ListCommands(input *ssm.ListCommandsInput) (CmdLogs, error) {
+	list := CmdLogs{}
+	output := func(page *ssm.ListCommandsOutput, lastpage bool) bool {
+		for _, i := range page.Commands {
+			var (
+				cmds    []string
+				cmd     string = "None"
+				targets []string
+				target  string = "None"
+			)
+
+			if i.Parameters["commands"] != nil {
+				for _, c := range i.Parameters["commands"] {
+					cmds = append(cmds, *c)
+				}
+				cmd = strings.Join(cmds[:], " ")
+			}
+
+			if i.Targets != nil {
+				for _, i := range i.Targets {
+					for _, v := range i.Values {
+						targets = []string{
+							*i.Key,
+							*v,
+						}
+					}
+				}
+				target = strings.Join(targets[:], ", ")
+			}
+
+			if i.InstanceIds != nil {
+				for _, i := range i.InstanceIds {
+					targets = append(targets, *i)
+				}
+				target = strings.Join(targets[:], ",")
+			}
+
+			list = append(list, CmdLog{
+				DocumentName:      *i.DocumentName,
+				Commands:          cmd,
+				Targets:           target,
+				Status:            *i.Status,
+				RequestedDateTime: i.RequestedDateTime.String(),
+			})
+		}
+		return true
+	}
+
+	if err := c.Client.ListCommandsPages(input, output); err != nil {
+		return nil, fmt.Errorf("List commands: %v", err)
+	}
+
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No command logs")
+	}
+
+	return list, nil
+}
+
+// DescribeParameters return []*ssm.Parameters
+// input ssm.DescribeParametersInput
+func (c *SSM) DescribeParameters(input *ssm.DescribeParametersInput) ([]*ssm.ParameterMetadata, error) {
+	var params []*ssm.ParameterMetadata
+	output := func(page *ssm.DescribeParametersOutput, lastPage bool) bool {
+		params = append(params, page.Parameters...)
+		return true
+	}
+
+	if err := c.Client.DescribeParametersPages(input, output); err != nil {
+		return nil, fmt.Errorf("Describe paramaters: %v", err)
+	}
+
+	if len(params) == 0 {
+		return nil, fmt.Errorf("No parameters")
+	}
+
+	return params, nil
+}
+
+// GetParameter return Parameters
+// input []*ssm.ParameterMetadata
+func (c *SSM) GetParameter(params []*ssm.ParameterMetadata) (Parameters, error) {
+	list := Parameters{}
+	for _, p := range params {
+		input := &ssm.GetParameterInput{
+			Name: aws.String(*p.Name),
+		}
+
+		output, err := c.Client.GetParameter(input)
+		if err != nil {
+			return nil, fmt.Errorf("Get parameter: %v", err)
+		}
+
+		list = append(list, Parameter{
+			Name:        *p.Name,
+			Value:       *output.Parameter.Value,
+			Description: *p.Description,
+		})
+	}
+
+	return list, nil
+}
+
+func PrintSessHist(wrt io.Writer, resources Sessions) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"SessionId",
+		"Owner",
+		"Target",
+		"StartDate",
+		"EndDate",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.HistTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
 	return nil
+}
+
+func (i *Session) HistTabString() string {
+	fields := []string{
+		i.SessionId,
+		i.Owner,
+		i.Target,
+		i.StartDate,
+		i.EndDate,
+	}
+
+	return strings.Join(fields, "\t")
+}
+
+func PrintCmdLogs(wrt io.Writer, resources CmdLogs) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"DocumentName",
+		"Commands",
+		"Targets",
+		"Status",
+		"RequestedDateTime",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.CmdLogTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	return nil
+}
+
+func (i *CmdLog) CmdLogTabString() string {
+	fields := []string{
+		i.DocumentName,
+		i.Commands,
+		i.Targets,
+		i.Status,
+		i.RequestedDateTime,
+	}
+
+	return strings.Join(fields, "\t")
+}
+
+func PrintParameters(wrt io.Writer, resources Parameters) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"Name",
+		"Value",
+		"Description",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.ParameterTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	return nil
+}
+
+func (i *Parameter) ParameterTabString() string {
+	fields := []string{
+		i.Name,
+		i.Value,
+		i.Description,
+	}
+
+	return strings.Join(fields, "\t")
 }

@@ -9,15 +9,21 @@ MODULE := github.com/sfuruya0612/${NAME}
 AWS_PROFILE := default
 REGION := ap-northeast-1
 
-install:
-	-rm ${GOPATH}/bin/${NAME}
-	go mod tidy
-	go install -ldflags "${LDFLAGS}" ${MODULE}
+.PHONY: test build image
 
-.PHONY: build
-build:
+test:
+	go fmt ./...
+	go vet ./...
+	errcheck ./...
+	staticcheck ./...
+	golangci-lint run
+	go test -v -race --cover ./...
+
+build: test
 	-rm -rf build
 	mkdir build
+
+	go mod tidy
 
 	GOOS=linux GOARGH=amd64 go build -ldflags "${LDFLAGS}" ${MODULE}
 	zip build/${NAME}_linux_amd64.zip ${NAME}
@@ -29,7 +35,11 @@ build:
 
 image: build
 	docker-compose build
-	docker images | grep snatch_cli
+
+install: test
+	-rm ${GOPATH}/bin/${NAME}
+	go mod tidy
+	go install -ldflags "${LDFLAGS}" ${MODULE}
 
 clean:
 	-rm ${GOPATH}/bin/${NAME}
@@ -37,12 +47,11 @@ clean:
 	-docker rmi --force ${NAME}_cli
 
 # Testing
-
-create_stack: pip_install
-	python test/create_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
-
-delete_stack:
-	python test/delete_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
-
-pip_install: pip_install
+pip_install:
 	pushd test ; pip install -r requirements.txt; popd
+
+deploy_stack: pip_install
+	python test/deploy_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
+
+delete_stack: pip_install
+	python test/delete_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &

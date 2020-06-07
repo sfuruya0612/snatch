@@ -2,139 +2,145 @@ package aws
 
 import (
 	"fmt"
+	"io"
+	"sort"
+	"strings"
+	"text/tabwriter"
 
 	"github.com/aws/aws-sdk-go/aws"
 	logs "github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/sfuruya0612/snatch/internal/util"
 )
 
+// CloudWatchLogs client struct
+type CloudWatchLogs struct {
+	Client *logs.CloudWatchLogs
+}
+
+// NewLogsSess return CloudWatchLogs struct initialized
+func NewLogsSess(profile, region string) *CloudWatchLogs {
+	return &CloudWatchLogs{
+		Client: logs.New(GetSession(profile, region)),
+	}
+}
+
+// LogEvent log event struct
 type LogEvent struct {
 	Timestamp string
 	Message   string
 }
 
+// LogEvents LogEvent struct slice
 type LogEvents []LogEvent
 
-const limit = 10
+// DescribeLogGroups return []string (logs.DescribeLogGroupsOutput.LogGroupName)
+// input logs.DescribeLogGroupsInput
+func (c *CloudWatchLogs) DescribeLogGroups(input *logs.DescribeLogGroupsInput) ([]string, error) {
+	groups := []string{}
+	output := func(page *logs.DescribeLogGroupsOutput, lastPage bool) bool {
+		for _, i := range page.LogGroups {
+			groups = append(groups, *i.LogGroupName)
+		}
+		return true
+	}
 
-func newLogsSess(profile, region string) *logs.CloudWatchLogs {
-	sess := getSession(profile, region)
-	return logs.New(sess)
+	if err := c.Client.DescribeLogGroupsPages(input, output); err != nil {
+		return nil, fmt.Errorf("Describe log groups: %v", err)
+	}
+
+	if len(groups) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
+
+	return groups, nil
 }
 
-func DescribeLogGroups(profile, region string, flag bool) error {
-	client := newLogsSess(profile, region)
-
-	input := &logs.DescribeLogGroupsInput{}
-	groups, err := client.DescribeLogGroups(input)
-	if err != nil {
-		return fmt.Errorf("Describe log groups: %v", err)
-	}
-
-	elements := []string{}
-	for _, l := range groups.LogGroups {
-		item := *l.LogGroupName
-
-		elements = append(elements, item)
-	}
-
-	group, err := util.Prompt(elements, "Select Log Group")
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	err = describeLogStreams(client, group, flag)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	return nil
-}
-
-func describeLogStreams(client *logs.CloudWatchLogs, group string, flag bool) error {
-	input := &logs.DescribeLogStreamsInput{
-		LogGroupName: aws.String(group),
-	}
-
-	streams, err := client.DescribeLogStreams(input)
-	if err != nil {
-		return fmt.Errorf("Describe log streams: %v", err)
-	}
-
-	elements := []string{}
-	for _, l := range streams.LogStreams {
-		item := *l.LogStreamName
-
-		elements = append(elements, item)
-	}
-
-	stream, err := util.Prompt(elements, "Select Log Stream")
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	// tokenがないと新しいログがとれない様子
-	// err = GetLogEvents(client, group, stream, token, flag)
-	err = GetLogEvents(client, group, stream, flag)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	return nil
-}
-
-func GetLogEvents(client *logs.CloudWatchLogs, group, stream string, flag bool) error {
-	var limit int64 = limit
-
-	input := &logs.GetLogEventsInput{
-		LogGroupName:  aws.String(group),
-		LogStreamName: aws.String(stream),
-		Limit:         aws.Int64(limit),
-	}
-
-	events, err := client.GetLogEvents(input)
-	if err != nil {
-		return fmt.Errorf("Get log events: %v", err)
-	}
-
-	list := LogEvents{}
-	for _, e := range events.Events {
-		time := aws.SecondsTimeValue(e.Timestamp)
-		t := time.String()
-
-		list = append(list, LogEvent{
-			Timestamp: t,
-			Message:   *e.Message,
+// DescribeLogStreams return []string (logs.DescribeLogStreamsOutput.LogStreamName)
+// input logs.DescribeLogStreamsInput
+func (c *CloudWatchLogs) DescribeLogStreams(input *logs.DescribeLogStreamsInput) ([]string, error) {
+	streams := []string{}
+	output := func(page *logs.DescribeLogStreamsOutput, lastPage bool) bool {
+		for _, i := range page.LogStreams {
+			// StoredBytes が 0 のstream は可視性が下がるので返さない
+			if *i.StoredBytes != 0 {
+				streams = append(streams, *i.LogStreamName)
+			}
+		}
+		sort.Slice(streams, func(i, j int) bool {
+			return streams[i] > streams[j]
 		})
-	}
-	f := util.Formatln(
-		list.Timestamp(),
-		list.Message(),
-	)
 
-	for _, i := range list {
-		fmt.Printf(
-			f,
-			i.Timestamp,
-			i.Message,
-		)
+		return true
+	}
+
+	if err := c.Client.DescribeLogStreamsPages(input, output); err != nil {
+		return nil, fmt.Errorf("Describe log streams: %v", err)
+	}
+
+	if len(streams) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
+
+	return streams, nil
+}
+
+// GetLogEvents return LogEvents
+// input logs.GetLogEventsInput
+func (c *CloudWatchLogs) GetLogEvents(input *logs.GetLogEventsInput) (LogEvents, error) {
+	list := LogEvents{}
+	output := func(page *logs.GetLogEventsOutput, lastPage bool) bool {
+		for _, i := range page.Events {
+			time := aws.SecondsTimeValue(i.Timestamp)
+			t := time.String()
+
+			list = append(list, LogEvent{
+				Timestamp: t,
+				Message:   *i.Message,
+			})
+		}
+
+		return true
+	}
+
+	if err := c.Client.GetLogEventsPages(input, output); err != nil {
+		return nil, fmt.Errorf("Get log events: %v", err)
+	}
+
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
+
+	return list, nil
+}
+
+func PrintLogEvents(wrt io.Writer, resources LogEvents) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"Timestamp",
+		"Message",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.LogsTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func (event LogEvents) Timestamp() []string {
-	time := []string{}
-	for _, i := range event {
-		time = append(time, i.Timestamp)
+func (i *LogEvent) LogsTabString() string {
+	fields := []string{
+		i.Timestamp,
+		i.Message,
 	}
-	return time
-}
 
-func (event LogEvents) Message() []string {
-	mess := []string{}
-	for _, i := range event {
-		mess = append(mess, i.Message)
-	}
-	return mess
+	return strings.Join(fields, "\t")
 }

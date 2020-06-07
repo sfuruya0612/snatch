@@ -2,134 +2,210 @@ package aws
 
 import (
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
+	"strings"
+	"text/tabwriter"
 
 	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/sfuruya0612/snatch/internal/util"
 )
 
-type DbInstance struct {
+// RDS client struct
+type RDS struct {
+	Client *rds.RDS
+}
+
+// NewRdsSess return RDS struct initialized
+func NewRdsSess(profile, region string) *RDS {
+	return &RDS{
+		Client: rds.New(GetSession(profile, region)),
+	}
+}
+
+// DBInstance rds db instance struct
+type DBInstance struct {
 	Name             string
 	DBInstanceClass  string
 	Engine           string
 	EngineVersion    string
+	Storage          string
 	DBInstanceStatus string
 	Endpoint         string
 	EndpointPort     string
 }
 
-type DbInstances []DbInstance
+// DBInstances DBInstance struct slice
+type DBInstances []DBInstance
 
-func newRdsSess(profile string, region string) *rds.RDS {
-	sess := getSession(profile, region)
-	return rds.New(sess)
+// DBCluster rds db cluster struct
+type DBCluster struct {
+	Name          string
+	EngineMode    string
+	EngineVersion string
+	Capacity      string
+	Status        string
+	Endpoint      string
+	EndpointPort  string
 }
 
-func DescribeDBInstances(profile string, region string) error {
-	rds := newRdsSess(profile, region)
+// DBClusters DBCluster struct slice
+type DBClusters []DBCluster
 
-	res, err := rds.DescribeDBInstances(nil)
+// DescribeDBInstances return DBInstances
+// input rds.DescribeDBInstancesInput
+func (c *RDS) DescribeDBInstances(input *rds.DescribeDBInstancesInput) (DBInstances, error) {
+	output, err := c.Client.DescribeDBInstances(input)
 	if err != nil {
-		return fmt.Errorf("Describe running instances: %v", err)
+		return nil, fmt.Errorf("Describe running instances: %v", err)
 	}
 
-	list := DbInstances{}
-	for _, i := range res.DBInstances {
-		port := strconv.FormatInt(*i.Endpoint.Port, 10)
+	list := DBInstances{}
+	for _, i := range output.DBInstances {
+		var (
+			addr string = "None"
+			port string = "None"
+		)
+		if i.Endpoint != nil {
+			addr = *i.Endpoint.Address
+			port = strconv.FormatInt(*i.Endpoint.Port, 10)
+		}
 
-		list = append(list, DbInstance{
+		storage := strconv.FormatInt(*i.AllocatedStorage, 10) + "GB"
+
+		list = append(list, DBInstance{
 			Name:             *i.DBInstanceIdentifier,
 			DBInstanceClass:  *i.DBInstanceClass,
 			Engine:           *i.Engine,
 			EngineVersion:    *i.EngineVersion,
+			Storage:          storage,
 			DBInstanceStatus: *i.DBInstanceStatus,
-			Endpoint:         *i.Endpoint.Address,
+			Endpoint:         addr,
 			EndpointPort:     port,
 		})
 	}
-	f := util.Formatln(
-		list.Name(),
-		list.DBInstanceClass(),
-		list.Engine(),
-		list.EngineVersion(),
-		list.DBInstanceStatus(),
-		list.Endpoint(),
-		list.EndpointPort(),
-	)
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
 
 	sort.Slice(list, func(i, j int) bool {
 		return list[i].Name < list[j].Name
 	})
 
-	for _, i := range list {
-		fmt.Printf(
-			f,
-			i.Name,
-			i.DBInstanceClass,
-			i.Engine,
-			i.EngineVersion,
-			i.DBInstanceStatus,
-			i.Endpoint,
-			i.EndpointPort,
-		)
+	return list, nil
+}
+
+// DescribeDBClusters return DBClusters
+// input rds.DescribeDBClustersInput
+func (c *RDS) DescribeDBClusters(input *rds.DescribeDBClustersInput) (DBClusters, error) {
+	output, err := c.Client.DescribeDBClusters(input)
+	if err != nil {
+		return nil, fmt.Errorf("Describe db clusters: %v", err)
+	}
+
+	list := DBClusters{}
+	for _, i := range output.DBClusters {
+		list = append(list, DBCluster{
+			Name:          *i.DBClusterIdentifier,
+			EngineMode:    *i.EngineMode,
+			EngineVersion: *i.EngineVersion,
+			Capacity:      strconv.FormatInt(*i.Capacity, 10),
+			Status:        *i.ActivityStreamStatus,
+			Endpoint:      *i.Endpoint,
+			EndpointPort:  strconv.FormatInt(*i.Port, 10),
+		})
+	}
+	if len(list) == 0 {
+		return nil, fmt.Errorf("No resources")
+	}
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Name < list[j].Name
+	})
+
+	return list, nil
+}
+
+func PrintDBInstances(wrt io.Writer, resources DBInstances) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"Endpoint",
+		"EndpointPort",
+		"DBInstanceClass",
+		"Engine",
+		"EngineVersion",
+		"Storage",
+		"DBInstanceStatus",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.RdsTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func (dins DbInstances) Name() []string {
-	name := []string{}
-	for _, i := range dins {
-		name = append(name, i.Name)
+func (i *DBInstance) RdsTabString() string {
+	fields := []string{
+		i.Endpoint,
+		i.EndpointPort,
+		i.DBInstanceClass,
+		i.Engine,
+		i.EngineVersion,
+		i.Storage,
+		i.DBInstanceStatus,
 	}
-	return name
+
+	return strings.Join(fields, "\t")
 }
 
-func (dins DbInstances) DBInstanceClass() []string {
-	class := []string{}
-	for _, i := range dins {
-		class = append(class, i.DBInstanceClass)
+func PrintDBClusters(wrt io.Writer, resources DBClusters) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"Endpoint",
+		"EndpointPort",
+		"EngineMode",
+		"EngineVersion",
+		"Capacity",
+		"Status",
 	}
-	return class
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.RdsClusterTabString()); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	return nil
 }
 
-func (dins DbInstances) Engine() []string {
-	eg := []string{}
-	for _, i := range dins {
-		eg = append(eg, i.Engine)
+func (i *DBCluster) RdsClusterTabString() string {
+	fields := []string{
+		i.Endpoint,
+		i.EndpointPort,
+		i.EngineMode,
+		i.EngineVersion,
+		i.Capacity,
+		i.Status,
 	}
-	return eg
-}
 
-func (dins DbInstances) EngineVersion() []string {
-	egv := []string{}
-	for _, i := range dins {
-		egv = append(egv, i.EngineVersion)
-	}
-	return egv
-}
-
-func (dins DbInstances) DBInstanceStatus() []string {
-	st := []string{}
-	for _, i := range dins {
-		st = append(st, i.DBInstanceStatus)
-	}
-	return st
-}
-
-func (dins DbInstances) Endpoint() []string {
-	ep := []string{}
-	for _, i := range dins {
-		ep = append(ep, i.Endpoint)
-	}
-	return ep
-}
-
-func (dins DbInstances) EndpointPort() []string {
-	port := []string{}
-	for _, i := range dins {
-		port = append(port, i.EndpointPort)
-	}
-	return port
+	return strings.Join(fields, "\t")
 }
