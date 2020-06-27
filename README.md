@@ -1,7 +1,7 @@
 # snatch
 
-<a href="https://goreportcard.com/report/github.com/sfuruya0612/snatch"><img src="https://goreportcard.com/badge/github.com/sfuruya0612/snatch" alt="Go Report Card"/></a>
-<a href="https://travis-ci.org/sfuruya0612/snatch"><img src="https://travis-ci.org/sfuruya0612/snatch.svg?branch=master"></a>
+[![Go Report Card](https://goreportcard.com/badge/github.com/sfuruya0612/snatch)](https://goreportcard.com/report/github.com/sfuruya0612/snatch)
+[![Build Status](https://travis-ci.org/sfuruya0612/snatch.svg?branch=master)](https://travis-ci.org/sfuruya0612/snatch)
 
 ## Index
 
@@ -184,3 +184,7 @@ Delete cloudformation stack.
 # Run on the backend
 make delete_stack
 ```
+
+## License
+
+[MIT License](./LICENSE)
