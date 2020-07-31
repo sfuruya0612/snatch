@@ -105,11 +105,16 @@ func (c *RDS) DescribeDBClusters(input *rds.DescribeDBClustersInput) (DBClusters
 
 	list := DBClusters{}
 	for _, i := range output.DBClusters {
+		var cap string = "None"
+		if i.Capacity != nil {
+			cap = strconv.FormatInt(*i.Capacity, 10)
+		}
+
 		list = append(list, DBCluster{
 			Name:          *i.DBClusterIdentifier,
 			EngineMode:    *i.EngineMode,
 			EngineVersion: *i.EngineVersion,
-			Capacity:      strconv.FormatInt(*i.Capacity, 10),
+			Capacity:      cap,
 			Status:        *i.ActivityStreamStatus,
 			Endpoint:      *i.Endpoint,
 			EndpointPort:  strconv.FormatInt(*i.Port, 10),
