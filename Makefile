@@ -11,12 +11,16 @@ REGION := ap-northeast-1
 
 .PHONY: test build image
 
-test:
+init:
+	asdf install
+	go get -u github.com/kisielk/errcheck
+	go get -u honnef.co/go/tools/cmd/staticcheck
+
+test: init
 	go fmt ./...
 	go vet ./...
 	errcheck ./...
 	staticcheck ./...
-	golangci-lint run
 	go test -v -race --cover ./...
 
 build: test

@@ -63,7 +63,7 @@ func GetObjectList(c *cli.Context) error {
 	}
 
 	if err := saws.PrintObjects(os.Stdout, objects); err != nil {
-		return fmt.Errorf("Failed to print objects")
+		return fmt.Errorf("failed to print objects")
 	}
 
 	return nil

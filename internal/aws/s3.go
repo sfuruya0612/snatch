@@ -51,7 +51,7 @@ type Objects []Object
 func (c *S3) ListBuckets(input *s3.ListBucketsInput) ([]string, error) {
 	output, err := c.Client.ListBuckets(input)
 	if err != nil {
-		return nil, fmt.Errorf("List buckets: %v", err)
+		return nil, fmt.Errorf("list buckets: %v", err)
 	}
 
 	buckets := []string{}
@@ -61,7 +61,7 @@ func (c *S3) ListBuckets(input *s3.ListBucketsInput) ([]string, error) {
 	}
 
 	if len(buckets) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	return buckets, nil
@@ -72,7 +72,7 @@ func (c *S3) ListBuckets(input *s3.ListBucketsInput) ([]string, error) {
 func (c *S3) ListObjects(input *s3.ListObjectsV2Input) (Objects, error) {
 	output, err := c.Client.ListObjectsV2(input)
 	if err != nil {
-		return nil, fmt.Errorf("List objects: %v", err)
+		return nil, fmt.Errorf("list objects: %v", err)
 	}
 
 	list := Objects{}
@@ -87,7 +87,7 @@ func (c *S3) ListObjects(input *s3.ListObjectsV2Input) (Objects, error) {
 		})
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	sort.Slice(list, func(i, j int) bool {
@@ -102,7 +102,7 @@ func (c *S3) ListObjects(input *s3.ListObjectsV2Input) (Objects, error) {
 func (c *S3) GetObject(input *s3.GetObjectInput) (io.ReadCloser, error) {
 	output, err := c.Client.GetObject(input)
 	if err != nil {
-		return nil, fmt.Errorf("Get object: %v", err)
+		return nil, fmt.Errorf("get object: %v", err)
 	}
 
 	return output.Body, nil
@@ -113,7 +113,7 @@ func (c *S3) GetObject(input *s3.GetObjectInput) (io.ReadCloser, error) {
 func (c *S3Downloader) Download(w io.WriterAt, input *s3.GetObjectInput) (int64, error) {
 	output, err := c.Client.Download(w, input)
 	if err != nil {
-		return 0, fmt.Errorf("Get object: %v", err)
+		return 0, fmt.Errorf("get object: %v", err)
 	}
 
 	return output, nil

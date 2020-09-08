@@ -20,7 +20,7 @@ func GetRdsList(c *cli.Context) error {
 	}
 
 	if err := saws.PrintDBInstances(os.Stdout, resources); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil
@@ -38,7 +38,7 @@ func GetRdsClusterList(c *cli.Context) error {
 	}
 
 	if err := saws.PrintDBClusters(os.Stdout, clusters); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil

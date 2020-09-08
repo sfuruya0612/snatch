@@ -80,7 +80,7 @@ func (c *SSM) DescribeInstanceInformation(input *ssm.DescribeInstanceInformation
 	}
 
 	if err := c.Client.DescribeInstanceInformationPages(input, output); err != nil {
-		return nil, fmt.Errorf("Describe instance information: %v", err)
+		return nil, fmt.Errorf("describe instance information: %v", err)
 	}
 
 	return ids, nil
@@ -119,7 +119,7 @@ func (c *SSM) DeleteStartSession(input *ssm.TerminateSessionInput) error {
 func (c *SSM) DescribeSessions(input *ssm.DescribeSessionsInput) (Sessions, error) {
 	output, err := c.Client.DescribeSessions(input)
 	if err != nil {
-		return nil, fmt.Errorf("Describe sessions: %v", err)
+		return nil, fmt.Errorf("describe sessions: %v", err)
 	}
 
 	list := Sessions{}
@@ -141,7 +141,7 @@ func (c *SSM) DescribeSessions(input *ssm.DescribeSessionsInput) (Sessions, erro
 		})
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No historys")
+		return nil, fmt.Errorf("no historys")
 	}
 
 	return list, nil
@@ -152,7 +152,7 @@ func (c *SSM) DescribeSessions(input *ssm.DescribeSessionsInput) (Sessions, erro
 func (c *SSM) SendCommand(input *ssm.SendCommandInput) (*ssm.SendCommandOutput, error) {
 	output, err := c.Client.SendCommand(input)
 	if err != nil {
-		return nil, fmt.Errorf("Command send: %v", err)
+		return nil, fmt.Errorf("command send: %v", err)
 	}
 
 	return output, nil
@@ -165,7 +165,7 @@ func (c *SSM) ListCommandInvocations(input *ssm.ListCommandInvocationsInput) (Re
 	for {
 		output, err := c.Client.ListCommandInvocations(input)
 		if err != nil {
-			return nil, fmt.Errorf("List command invocation: %v", err)
+			return nil, fmt.Errorf("list command invocation: %v", err)
 		}
 
 		if len(output.CommandInvocations) == 0 {
@@ -264,11 +264,11 @@ func (c *SSM) ListCommands(input *ssm.ListCommandsInput) (CmdLogs, error) {
 	}
 
 	if err := c.Client.ListCommandsPages(input, output); err != nil {
-		return nil, fmt.Errorf("List commands: %v", err)
+		return nil, fmt.Errorf("list commands: %v", err)
 	}
 
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No command logs")
+		return nil, fmt.Errorf("no command logs")
 	}
 
 	return list, nil
@@ -284,11 +284,11 @@ func (c *SSM) DescribeParameters(input *ssm.DescribeParametersInput) ([]*ssm.Par
 	}
 
 	if err := c.Client.DescribeParametersPages(input, output); err != nil {
-		return nil, fmt.Errorf("Describe paramaters: %v", err)
+		return nil, fmt.Errorf("describe paramaters: %v", err)
 	}
 
 	if len(params) == 0 {
-		return nil, fmt.Errorf("No parameters")
+		return nil, fmt.Errorf("no parameters")
 	}
 
 	return params, nil
@@ -305,7 +305,7 @@ func (c *SSM) GetParameter(params []*ssm.ParameterMetadata) (Parameters, error) 
 
 		output, err := c.Client.GetParameter(input)
 		if err != nil {
-			return nil, fmt.Errorf("Get parameter: %v", err)
+			return nil, fmt.Errorf("get parameter: %v", err)
 		}
 
 		list = append(list, Parameter{

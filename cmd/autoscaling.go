@@ -43,7 +43,7 @@ func UpdateCapacity(c *cli.Context) error {
 
 	// desired, min, maxの値の関係性を確認
 	if max < min || desired < min || max < desired {
-		return fmt.Errorf("Capacity options number have incorrect relationship")
+		return fmt.Errorf("capacity options number have incorrect relationship")
 	}
 
 	client := saws.NewAsgSess(profile, region)

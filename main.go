@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/sfuruya0612/snatch/cmd"
 	"github.com/urfave/cli"
 )
-
-const version = "20.6.1"
 
 var (
 	date      string
@@ -26,7 +25,11 @@ func main() {
 	if date != "" || hash != "" || goversion != "" {
 		app.Version = fmt.Sprintf("%s %s (Build by: %s)", date, hash, goversion)
 	} else {
-		app.Version = version
+		v, err := ioutil.ReadFile("VERSION")
+		if err != nil {
+			fmt.Println("doesn’t read the VERSION file")
+		}
+		app.Version = string(v)
 	}
 
 	app.Flags = []cli.Flag{

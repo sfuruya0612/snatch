@@ -21,7 +21,7 @@ func GetElbList(c *cli.Context) error {
 	}
 
 	if err := saws.PrintBalancers(os.Stdout, resources); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil
@@ -38,7 +38,7 @@ func GetElbV2List(c *cli.Context) error {
 	}
 
 	if err := saws.PrintBalancersV2(os.Stdout, resources); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil

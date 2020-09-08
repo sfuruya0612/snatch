@@ -42,7 +42,7 @@ func (c *AutoScaling) DescribeAutoScalingGroups(input *autoscaling.DescribeAutoS
 	list := Groups{}
 	output, err := c.Client.DescribeAutoScalingGroups(input)
 	if err != nil {
-		return nil, fmt.Errorf("Describe autoscaling groups: %v", err)
+		return nil, fmt.Errorf("describe autoscaling groups: %v", err)
 	}
 
 	for _, i := range output.AutoScalingGroups {
@@ -83,7 +83,7 @@ func (c *AutoScaling) DescribeAutoScalingGroups(input *autoscaling.DescribeAutoS
 		})
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	sort.Slice(list, func(i, j int) bool {
@@ -97,7 +97,7 @@ func (c *AutoScaling) DescribeAutoScalingGroups(input *autoscaling.DescribeAutoS
 // input autoscaling.UpdateAutoScalingGroupInput
 func (c *AutoScaling) UpdateAutoScalingGroup(input *autoscaling.UpdateAutoScalingGroupInput) error {
 	if _, err := c.Client.UpdateAutoScalingGroup(input); err != nil {
-		return fmt.Errorf("Update autoscaling group: %v", err)
+		return fmt.Errorf("update autoscaling group: %v", err)
 	}
 
 	return nil

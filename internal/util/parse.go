@@ -16,12 +16,12 @@ func JParser(in interface{}) ([]Response, error) {
 
 	bytes, err := json.Marshal(in)
 	if err != nil {
-		return res, fmt.Errorf("Json Marshal error: %v", err)
+		return res, fmt.Errorf("json Marshal error: %v", err)
 	}
 
 	err = json.Unmarshal(bytes, &res)
 	if err != nil {
-		return res, fmt.Errorf("Json Unmarshal error: %v", err)
+		return res, fmt.Errorf("json Unmarshal error: %v", err)
 	}
 
 	return res, nil
@@ -30,7 +30,7 @@ func JParser(in interface{}) ([]Response, error) {
 func Marshal(in interface{}) ([]byte, error) {
 	bytes, err := json.Marshal(in)
 	if err != nil {
-		return nil, fmt.Errorf("Json Marshal error: %v", err)
+		return nil, fmt.Errorf("json Marshal error: %v", err)
 	}
 
 	return bytes, nil

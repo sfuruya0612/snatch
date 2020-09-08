@@ -21,7 +21,7 @@ func GetEcClusterList(c *cli.Context) error {
 	}
 
 	if err := saws.PrintCacheClusters(os.Stdout, resources); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil
@@ -38,7 +38,7 @@ func GetEcGroupsList(c *cli.Context) error {
 	}
 
 	if err := saws.PrintRepricationGroups(os.Stdout, resources); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil

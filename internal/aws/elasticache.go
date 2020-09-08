@@ -46,7 +46,7 @@ type CacheNodes []CacheNode
 func (c *ElastiCache) DescribeCacheClusters(input *elasticache.DescribeCacheClustersInput) (CacheNodes, error) {
 	output, err := c.Client.DescribeCacheClusters(input)
 	if err != nil {
-		return nil, fmt.Errorf("Describe cache cluster: %v", err)
+		return nil, fmt.Errorf("describe cache cluster: %v", err)
 	}
 
 	list := CacheNodes{}
@@ -60,7 +60,7 @@ func (c *ElastiCache) DescribeCacheClusters(input *elasticache.DescribeCacheClus
 		})
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	sort.Slice(list, func(i, j int) bool {
@@ -75,7 +75,7 @@ func (c *ElastiCache) DescribeCacheClusters(input *elasticache.DescribeCacheClus
 func (c *ElastiCache) DescribeReplicationGroups(input *elasticache.DescribeReplicationGroupsInput) (CacheNodes, error) {
 	output, err := c.Client.DescribeReplicationGroups(input)
 	if err != nil {
-		return nil, fmt.Errorf("Describe replication groups: %v", err)
+		return nil, fmt.Errorf("describe replication groups: %v", err)
 	}
 
 	list := CacheNodes{}
@@ -116,7 +116,7 @@ func (c *ElastiCache) DescribeReplicationGroups(input *elasticache.DescribeRepli
 
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	sort.Slice(list, func(i, j int) bool {

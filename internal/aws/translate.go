@@ -23,7 +23,7 @@ func NewTransSess(profile, region string) *Translate {
 func (c *Translate) TranslateText(input *translate.TextInput) (*translate.TextOutput, error) {
 	output, err := c.Client.Text(input)
 	if err != nil {
-		return nil, fmt.Errorf("Translate text: %v", err)
+		return nil, fmt.Errorf("translate text: %v", err)
 	}
 
 	return output, nil

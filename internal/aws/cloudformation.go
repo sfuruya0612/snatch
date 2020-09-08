@@ -48,7 +48,7 @@ type Events []Event
 func (c *CloudFormation) DescribeStacks(input *cloudformation.DescribeStacksInput) (Stacks, error) {
 	output, err := c.Client.DescribeStacks(input)
 	if err != nil {
-		return nil, fmt.Errorf("Describe stacks: %v", err)
+		return nil, fmt.Errorf("describe stacks: %v", err)
 	}
 
 	list := Stacks{}
@@ -66,7 +66,7 @@ func (c *CloudFormation) DescribeStacks(input *cloudformation.DescribeStacksInpu
 		})
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	return list, nil
@@ -77,7 +77,7 @@ func (c *CloudFormation) DescribeStacks(input *cloudformation.DescribeStacksInpu
 func (c *CloudFormation) DescribeStackEvents(input *cloudformation.DescribeStackEventsInput) (Events, error) {
 	output, err := c.Client.DescribeStackEvents(input)
 	if err != nil {
-		return nil, fmt.Errorf("Describe stack events: %v", err)
+		return nil, fmt.Errorf("describe stack events: %v", err)
 	}
 
 	list := Events{}
@@ -103,7 +103,7 @@ func (c *CloudFormation) DescribeStackEvents(input *cloudformation.DescribeStack
 // input cloudformation.DeleteStackInput
 func (c *CloudFormation) DeleteStack(input *cloudformation.DeleteStackInput) error {
 	if _, err := c.Client.DeleteStack(input); err != nil {
-		return fmt.Errorf("Delete stack: %v", err)
+		return fmt.Errorf("delete stack: %v", err)
 	}
 
 	return nil

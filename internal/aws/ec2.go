@@ -43,7 +43,7 @@ type Instances []Instance
 func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, error) {
 	output, err := c.Client.DescribeInstances(input)
 	if err != nil {
-		return nil, fmt.Errorf("Describe instances: %v", err)
+		return nil, fmt.Errorf("describe instances: %v", err)
 	}
 
 	list := Instances{}
@@ -89,7 +89,7 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, e
 		}
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	sort.Slice(list, func(i, j int) bool {
@@ -104,7 +104,7 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, e
 func (c *EC2) GetConsoleOutput(input *ec2.GetConsoleOutputInput) (*ec2.GetConsoleOutputOutput, error) {
 	output, err := c.Client.GetConsoleOutput(input)
 	if err != nil {
-		return nil, fmt.Errorf("Get console output: %v", err)
+		return nil, fmt.Errorf("get console output: %v", err)
 	}
 
 	return output, nil
@@ -115,7 +115,7 @@ func (c *EC2) GetConsoleOutput(input *ec2.GetConsoleOutputInput) (*ec2.GetConsol
 func (c *EC2) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error) {
 	output, err := c.Client.TerminateInstances(input)
 	if err != nil {
-		return nil, fmt.Errorf("Terminate instances: %v", err)
+		return nil, fmt.Errorf("terminate instances: %v", err)
 	}
 
 	return output, nil

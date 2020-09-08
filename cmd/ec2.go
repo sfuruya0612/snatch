@@ -22,12 +22,12 @@ func GetEc2List(c *cli.Context) error {
 	input := &ec2.DescribeInstancesInput{}
 	if len(tag) > 0 {
 		if !strings.Contains(tag, ":") {
-			return fmt.Errorf("Tag is different (e.g. Name:hogehoge)")
+			return fmt.Errorf("tag is different (e.g. Name:hogehoge)")
 		}
 
 		spl := strings.Split(tag, ":")
 		if len(spl) == 0 {
-			return fmt.Errorf("Parse tag=%s", tag)
+			return fmt.Errorf("parse tag=%s", tag)
 		}
 
 		input.Filters = append(input.Filters, &ec2.Filter{
@@ -50,7 +50,7 @@ func GetEc2List(c *cli.Context) error {
 	}
 
 	if err := saws.PrintInstances(os.Stdout, resources); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil

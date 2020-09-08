@@ -23,7 +23,7 @@ func NewMetricsSess(profile, region string) *CloudWatch {
 func (c *CloudWatch) GetMetricData(input *cloudwatch.GetMetricDataInput) error {
 	output, err := c.Client.GetMetricData(input)
 	if err != nil {
-		return fmt.Errorf("Get metric data: %v", err)
+		return fmt.Errorf("get metric data: %v", err)
 	}
 
 	fmt.Println(output)
