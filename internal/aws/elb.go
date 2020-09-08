@@ -53,7 +53,7 @@ type Balancers []Balancer
 func (c *ELB) DescribeLoadBalancers(input *elb.DescribeLoadBalancersInput) (Balancers, error) {
 	output, err := c.Client.DescribeLoadBalancers(input)
 	if err != nil {
-		return nil, fmt.Errorf("Describe load balancers: %v", err)
+		return nil, fmt.Errorf("describe load balancers: %v", err)
 	}
 
 	list := Balancers{}
@@ -79,7 +79,7 @@ func (c *ELB) DescribeLoadBalancers(input *elb.DescribeLoadBalancersInput) (Bala
 		})
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	sort.Slice(list, func(i, j int) bool {
@@ -95,7 +95,7 @@ func (c *ELB) DescribeLoadBalancers(input *elb.DescribeLoadBalancersInput) (Bala
 func (c *ELBV2) DescribeLoadBalancersV2(input *elbv2.DescribeLoadBalancersInput) (Balancers, error) {
 	output, err := c.Client.DescribeLoadBalancers(nil)
 	if err != nil {
-		return nil, fmt.Errorf("Describe load balancers v2: %v", err)
+		return nil, fmt.Errorf("describe load balancers v2: %v", err)
 	}
 
 	list := Balancers{}
@@ -109,7 +109,7 @@ func (c *ELBV2) DescribeLoadBalancersV2(input *elbv2.DescribeLoadBalancersInput)
 		})
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	sort.Slice(list, func(i, j int) bool {

@@ -57,7 +57,7 @@ type DBClusters []DBCluster
 func (c *RDS) DescribeDBInstances(input *rds.DescribeDBInstancesInput) (DBInstances, error) {
 	output, err := c.Client.DescribeDBInstances(input)
 	if err != nil {
-		return nil, fmt.Errorf("Describe running instances: %v", err)
+		return nil, fmt.Errorf("describe running instances: %v", err)
 	}
 
 	list := DBInstances{}
@@ -85,7 +85,7 @@ func (c *RDS) DescribeDBInstances(input *rds.DescribeDBInstancesInput) (DBInstan
 		})
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	sort.Slice(list, func(i, j int) bool {
@@ -100,23 +100,28 @@ func (c *RDS) DescribeDBInstances(input *rds.DescribeDBInstancesInput) (DBInstan
 func (c *RDS) DescribeDBClusters(input *rds.DescribeDBClustersInput) (DBClusters, error) {
 	output, err := c.Client.DescribeDBClusters(input)
 	if err != nil {
-		return nil, fmt.Errorf("Describe db clusters: %v", err)
+		return nil, fmt.Errorf("describe db clusters: %v", err)
 	}
 
 	list := DBClusters{}
 	for _, i := range output.DBClusters {
+		var cap string = "None"
+		if i.Capacity != nil {
+			cap = strconv.FormatInt(*i.Capacity, 10)
+		}
+
 		list = append(list, DBCluster{
 			Name:          *i.DBClusterIdentifier,
 			EngineMode:    *i.EngineMode,
 			EngineVersion: *i.EngineVersion,
-			Capacity:      strconv.FormatInt(*i.Capacity, 10),
+			Capacity:      cap,
 			Status:        *i.ActivityStreamStatus,
 			Endpoint:      *i.Endpoint,
 			EndpointPort:  strconv.FormatInt(*i.Port, 10),
 		})
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	sort.Slice(list, func(i, j int) bool {

@@ -20,7 +20,7 @@ func GetRecordsList(c *cli.Context) error {
 	}
 
 	if err := saws.PrintRecords(os.Stdout, resources); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil

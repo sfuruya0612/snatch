@@ -20,7 +20,7 @@ func GetUserList(c *cli.Context) error {
 	}
 
 	if err := saws.PrintUsers(os.Stdout, output); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil
@@ -42,7 +42,7 @@ func GetRoleList(c *cli.Context) error {
 	}
 
 	if err := saws.PrintRoles(os.Stdout, output); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil

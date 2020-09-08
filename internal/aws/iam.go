@@ -109,7 +109,7 @@ func (c *IAM) ListUsers(input *iam.ListUsersInput) (Users, error) {
 	}
 
 	if err := c.Client.ListUsersPages(input, output); err != nil {
-		return nil, fmt.Errorf("List users: %v", err)
+		return nil, fmt.Errorf("list users: %v", err)
 	}
 
 	return list, nil
@@ -120,7 +120,7 @@ func (c *IAM) ListUsers(input *iam.ListUsersInput) (Users, error) {
 func (c *IAM) ListAttachedUserPolicies(input *iam.ListAttachedUserPoliciesInput) (string, error) {
 	output, err := c.Client.ListAttachedUserPolicies(input)
 	if err != nil {
-		return "", fmt.Errorf("List attached user policies: %v", err)
+		return "", fmt.Errorf("list attached user policies: %v", err)
 	}
 
 	var (
@@ -144,7 +144,7 @@ func (c *IAM) ListAttachedUserPolicies(input *iam.ListAttachedUserPoliciesInput)
 func (c *IAM) ListUserPolicies(input *iam.ListUserPoliciesInput) (string, error) {
 	output, err := c.Client.ListUserPolicies(input)
 	if err != nil {
-		return "", fmt.Errorf("List user policies: %v", err)
+		return "", fmt.Errorf("list user policies: %v", err)
 	}
 
 	var (
@@ -168,7 +168,7 @@ func (c *IAM) ListUserPolicies(input *iam.ListUserPoliciesInput) (string, error)
 func (c *IAM) ListGroupsForUser(input *iam.ListGroupsForUserInput) (string, error) {
 	output, err := c.Client.ListGroupsForUser(input)
 	if err != nil {
-		return "", fmt.Errorf("List groups for user: %v", err)
+		return "", fmt.Errorf("list groups for user: %v", err)
 	}
 
 	var (
@@ -192,7 +192,7 @@ func (c *IAM) ListGroupsForUser(input *iam.ListGroupsForUserInput) (string, erro
 func (c *IAM) ListAccessKeys(input *iam.ListAccessKeysInput) (string, error) {
 	output, err := c.Client.ListAccessKeys(input)
 	if err != nil {
-		return "", fmt.Errorf("List access keys: %v", err)
+		return "", fmt.Errorf("list access keys: %v", err)
 	}
 
 	var (
@@ -216,7 +216,7 @@ func (c *IAM) ListAccessKeys(input *iam.ListAccessKeysInput) (string, error) {
 func (c *IAM) ListRoles(input *iam.ListRolesInput) ([]string, error) {
 	output, err := c.Client.ListRoles(input)
 	if err != nil {
-		return nil, fmt.Errorf("List roles: %v", err)
+		return nil, fmt.Errorf("list roles: %v", err)
 	}
 
 	names := []string{}
@@ -238,7 +238,7 @@ func (c *IAM) GetRole(names []string) (Roles, error) {
 
 		output, err := c.Client.GetRole(input)
 		if err != nil {
-			return nil, fmt.Errorf("Get role: %v", err)
+			return nil, fmt.Errorf("get role: %v", err)
 		}
 
 		list = append(list, Role{

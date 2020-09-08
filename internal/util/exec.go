@@ -22,7 +22,7 @@ func ExecCommand(process string, args ...string) error {
 			select {
 			case <-sigs:
 			case <-done:
-				break
+				// break
 			}
 		}
 	}()

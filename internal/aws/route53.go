@@ -40,7 +40,7 @@ type Records []Record
 func (c *Route53) ListHostedZones(input *route53.ListHostedZonesInput) (Records, error) {
 	zones, err := c.Client.ListHostedZones(input)
 	if err != nil {
-		return nil, fmt.Errorf("List hostedzones: %v", err)
+		return nil, fmt.Errorf("list hostedzones: %v", err)
 	}
 
 	list := Records{}
@@ -85,12 +85,12 @@ func (c *Route53) ListHostedZones(input *route53.ListHostedZonesInput) (Records,
 		}
 
 		if err := c.Client.ListResourceRecordSetsPages(rinput, output); err != nil {
-			return nil, fmt.Errorf("List resource record sets: %v", err)
+			return nil, fmt.Errorf("list resource record sets: %v", err)
 		}
 	}
 
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	return list, nil

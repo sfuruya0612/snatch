@@ -1,6 +1,6 @@
 module github.com/sfuruya0612/snatch
 
-go 1.13
+go 1.15
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
@@ -11,8 +11,6 @@ require (
 	github.com/nicksnyder/go-i18n v1.10.1 // indirect
 	github.com/urfave/cli v1.20.0
 	golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3 // indirect
-	golang.org/x/net v0.0.0-20190522155817-f3200d17e092 // indirect
-	golang.org/x/sys v0.0.0-20190530182044-ad28b68e88f1 // indirect
-	golang.org/x/tools v0.0.0-20190628153133-6cdbf07be9d0 // indirect
+	golang.org/x/tools v0.0.0-20200904185747-39188db58858 // indirect
 	gopkg.in/alecthomas/kingpin.v3-unstable v3.0.0-20180810215634-df19058c872c // indirect
 )

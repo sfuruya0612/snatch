@@ -42,7 +42,7 @@ type Costs []Cost
 func (c *CostExplorer) GetCostAndUsage(input *costexplorer.GetCostAndUsageInput) (Costs, error) {
 	output, err := c.Client.GetCostAndUsage(input)
 	if err != nil {
-		return nil, fmt.Errorf("Get cost and usage: %v", err)
+		return nil, fmt.Errorf("get cost and usage: %v", err)
 	}
 
 	list := Costs{}

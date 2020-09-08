@@ -44,11 +44,11 @@ func (c *CloudWatchLogs) DescribeLogGroups(input *logs.DescribeLogGroupsInput) (
 	}
 
 	if err := c.Client.DescribeLogGroupsPages(input, output); err != nil {
-		return nil, fmt.Errorf("Describe log groups: %v", err)
+		return nil, fmt.Errorf("describe log groups: %v", err)
 	}
 
 	if len(groups) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	return groups, nil
@@ -73,11 +73,11 @@ func (c *CloudWatchLogs) DescribeLogStreams(input *logs.DescribeLogStreamsInput)
 	}
 
 	if err := c.Client.DescribeLogStreamsPages(input, output); err != nil {
-		return nil, fmt.Errorf("Describe log streams: %v", err)
+		return nil, fmt.Errorf("describe log streams: %v", err)
 	}
 
 	if len(streams) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	return streams, nil
@@ -102,11 +102,11 @@ func (c *CloudWatchLogs) GetLogEvents(input *logs.GetLogEventsInput) (LogEvents,
 	}
 
 	if err := c.Client.GetLogEventsPages(input, output); err != nil {
-		return nil, fmt.Errorf("Get log events: %v", err)
+		return nil, fmt.Errorf("get log events: %v", err)
 	}
 
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	return list, nil

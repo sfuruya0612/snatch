@@ -58,7 +58,7 @@ func GetCost(c *cli.Context) error {
 	for _, o := range output {
 		fmt.Printf("Start Date: %v\nEnd Date:   %v\n", o.Start, o.End)
 		if err := saws.PrintUsage(os.Stdout, o.Usage); err != nil {
-			return fmt.Errorf("Failed to print costs")
+			return fmt.Errorf("failed to print costs")
 		}
 		fmt.Println("-----")
 	}

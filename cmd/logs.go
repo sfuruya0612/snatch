@@ -69,7 +69,7 @@ func GetCloudWatchLogs(c *cli.Context) error {
 			}
 
 			if err := saws.PrintLogEvents(os.Stdout, resources); err != nil {
-				return fmt.Errorf("Failed to print resources")
+				return fmt.Errorf("failed to print resources")
 			}
 		}
 	}

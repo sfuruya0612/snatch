@@ -11,7 +11,7 @@ import (
 
 func Prompt(elements []string, label string) (string, error) {
 	if len(elements) < 1 {
-		return "", fmt.Errorf("Elements is empty")
+		return "", fmt.Errorf("elements is empty")
 	}
 
 	searcher := func(input string, index int) bool {
@@ -28,7 +28,7 @@ func Prompt(elements []string, label string) (string, error) {
 
 	_, result, err := prompt.Run()
 	if err != nil {
-		return "", fmt.Errorf("Prompt failed %v\n", err)
+		return "", fmt.Errorf("prompt failed %v", err)
 	}
 
 	return result, nil

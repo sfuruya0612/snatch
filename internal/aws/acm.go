@@ -39,7 +39,7 @@ type Certificates []Certificate
 func (c *ACM) ListCertificates(input *acm.ListCertificatesInput) (Certificates, error) {
 	certs, err := c.Client.ListCertificates(input)
 	if err != nil {
-		return nil, fmt.Errorf("List certificates: %v", err)
+		return nil, fmt.Errorf("list certificates: %v", err)
 	}
 
 	list := Certificates{}
@@ -51,7 +51,7 @@ func (c *ACM) ListCertificates(input *acm.ListCertificatesInput) (Certificates, 
 
 		output, err := c.Client.DescribeCertificate(i)
 		if err != nil {
-			return nil, fmt.Errorf("Describe certificate: %v", err)
+			return nil, fmt.Errorf("describe certificate: %v", err)
 		}
 
 		cert := output.Certificate
@@ -65,7 +65,7 @@ func (c *ACM) ListCertificates(input *acm.ListCertificatesInput) (Certificates, 
 		})
 	}
 	if len(list) == 0 {
-		return nil, fmt.Errorf("No resources")
+		return nil, fmt.Errorf("no resources")
 	}
 
 	return list, nil

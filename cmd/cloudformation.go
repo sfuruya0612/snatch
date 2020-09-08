@@ -22,7 +22,7 @@ func GetStacksList(c *cli.Context) error {
 	}
 
 	if err := saws.PrintStacks(os.Stdout, resources); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil
@@ -48,7 +48,7 @@ func GetStackEvents(c *cli.Context) error {
 	}
 
 	if err := saws.PrintEvents(os.Stdout, events); err != nil {
-		return fmt.Errorf("Failed to print events")
+		return fmt.Errorf("failed to print events")
 	}
 
 	return nil

@@ -120,7 +120,7 @@ func GetSsmHist(c *cli.Context) error {
 	}
 
 	if err := saws.PrintSessHist(os.Stdout, hist); err != nil {
-		return fmt.Errorf("Failed to print resources")
+		return fmt.Errorf("failed to print resources")
 	}
 
 	return nil
@@ -133,13 +133,13 @@ func SendCommand(c *cli.Context) error {
 	args := c.Args()
 	file := c.String("file")
 	if len(args) == 0 && len(file) == 0 {
-		return fmt.Errorf("Args or file is required")
+		return fmt.Errorf("args or file is required")
 	}
 
 	id := c.String("id")
 	tag := c.String("tag")
 	if len(id) == 0 && len(tag) == 0 {
-		return fmt.Errorf("Instance id or tag is required")
+		return fmt.Errorf("instance id or tag is required")
 	}
 
 	param := make(map[string][]*string)
@@ -156,7 +156,7 @@ func SendCommand(c *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("open file %s: %v", file, err)
 		}
-		defer f.Close()
+		// defer f.Close()
 
 		command := []*string{}
 		s := bufio.NewScanner(f)
@@ -181,7 +181,7 @@ func SendCommand(c *cli.Context) error {
 	if len(tag) > 0 {
 		spl := strings.Split(tag, ":")
 		if len(spl) != 2 {
-			return fmt.Errorf("Parse tag=%s", tag)
+			return fmt.Errorf("parse tag=%s", tag)
 		}
 		ci.Targets = []*ssm.Target{
 			{
@@ -210,7 +210,7 @@ func SendCommand(c *cli.Context) error {
 
 	json, err := util.JParser(invo)
 	if err != nil {
-		return fmt.Errorf("Json Marshal: %v", err)
+		return fmt.Errorf("json marshal: %v", err)
 	}
 
 	for r := range json {
@@ -240,7 +240,7 @@ func GetCmdLog(c *cli.Context) error {
 	}
 
 	if err := saws.PrintCmdLogs(os.Stdout, logs); err != nil {
-		return fmt.Errorf("Failed to print command logs")
+		return fmt.Errorf("failed to print command logs")
 	}
 
 	return nil
@@ -263,7 +263,7 @@ func GetParameter(c *cli.Context) error {
 	}
 
 	if err := saws.PrintParameters(os.Stdout, param); err != nil {
-		return fmt.Errorf("Failed to print parameters")
+		return fmt.Errorf("failed to print parameters")
 	}
 
 	return nil
