@@ -50,12 +50,12 @@ clean:
 	-rm -rf build
 	-docker rmi --force ${NAME}_cli
 
-# Testing
+# Test
 pip_install:
-	pushd test ; pip install -r requirements.txt; popd
+	pushd scripts ; pip install -r requirements.txt; popd
 
 deploy_stack: pip_install
-	python test/deploy_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
+	python scripts/deploy_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
 
 delete_stack: pip_install
-	python test/delete_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &
+	python scripts/delete_stack.py -a ${NAME} -p ${AWS_PROFILE} -r ${REGION} &

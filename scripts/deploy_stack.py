@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from argparse import ArgumentParser
 
 TEMPLATES = [
-    "/test/ec2.yml",
+    "/scripts/ec2.yml",
 ]
 
 logger = logging.getLogger()
