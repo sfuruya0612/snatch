@@ -30,6 +30,7 @@ type DBInstance struct {
 	Engine           string
 	EngineVersion    string
 	Storage          string
+	StorageType      string
 	DBInstanceStatus string
 	Endpoint         string
 	EndpointPort     string
@@ -79,6 +80,7 @@ func (c *RDS) DescribeDBInstances(input *rds.DescribeDBInstancesInput) (DBInstan
 			Engine:           *i.Engine,
 			EngineVersion:    *i.EngineVersion,
 			Storage:          storage,
+			StorageType:      *i.StorageType,
 			DBInstanceStatus: *i.DBInstanceStatus,
 			Endpoint:         addr,
 			EndpointPort:     port,
@@ -140,6 +142,7 @@ func PrintDBInstances(wrt io.Writer, resources DBInstances) error {
 		"Engine",
 		"EngineVersion",
 		"Storage",
+		"StrageType",
 		"DBInstanceStatus",
 	}
 
@@ -168,6 +171,7 @@ func (i *DBInstance) RdsTabString() string {
 		i.Engine,
 		i.EngineVersion,
 		i.Storage,
+		i.StorageType,
 		i.DBInstanceStatus,
 	}
 
