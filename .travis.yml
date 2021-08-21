@@ -1,15 +1,13 @@
 language: go
 
 go:
-  - 1.11.x
-  - 1.12.x
-  - 1.13.x
-  - 1.14.x
+  - 1.15.x
+  - 1.16.x
+  - "1.17"
 
 env:
   global:
     - BUILD_GOARCH=amd64
-    - GO111MODULE=on
   matrix:
     - BUILD_GOOS=linux
     - BUILD_GOOS=darwin
