@@ -20,7 +20,7 @@ func main() {
 
 	app.EnableBashCompletion = true
 	app.Name = "snatch"
-	app.Usage = "Cli command to Amazon Web Services resources"
+	app.Usage = "CLI tool to get AWS resources"
 
 	if date != "" || hash != "" || goversion != "" {
 		app.Version = fmt.Sprintf("%s %s (Build by: %s)", date, hash, goversion)

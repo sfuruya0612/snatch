@@ -13,8 +13,8 @@ REGION := ap-northeast-1
 
 init:
 	asdf install
-	go get -u github.com/kisielk/errcheck
-	go get -u honnef.co/go/tools/cmd/staticcheck
+	go get -d github.com/kisielk/errcheck
+	go get -d honnef.co/go/tools/cmd/staticcheck
 
 test: init
 	go fmt ./...
@@ -32,8 +32,14 @@ build: test
 	GOOS=linux GOARGH=amd64 go build -ldflags "${LDFLAGS}" ${MODULE}
 	zip build/${NAME}_linux_amd64.zip ${NAME}
 
+	GOOS=linux GOARGH=arm64 go build -ldflags "${LDFLAGS}" ${MODULE}
+	zip build/${NAME}_linux_arm64.zip ${NAME}
+
 	GOOS=darwin GOARGH=amd64 go build -ldflags "${LDFLAGS}" ${MODULE}
 	zip build/${NAME}_darwin_amd64.zip ${NAME}
+
+	GOOS=darwin GOARGH=arm64 go build -ldflags "${LDFLAGS}" ${MODULE}
+	zip build/${NAME}_darwin_arm64.zip ${NAME}
 
 	@rm ${NAME}
 
