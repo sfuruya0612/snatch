@@ -9,16 +9,26 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 
 	saws "github.com/sfuruya0612/snatch/internal/aws"
-	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func GetEc2List(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-	tag := c.String("tag")
-	short := c.Bool("short")
+var Ec2 = &cli.Command{
+	Name:      "ec2",
+	Usage:     "Get a list of EC2 resources",
+	ArgsUsage: "[ --tag | -t ] <Key:Value>",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:    "tag",
+			Aliases: []string{"t"},
+			Usage:   "The Key-Value of the tag to filter",
+		},
+	},
+	Action: func(c *cli.Context) error {
+		return getEc2List(c.String("profile"), c.String("region"), c.String("tag"))
+	},
+}
 
+func getEc2List(profile, region, tag string) error {
 	input := &ec2.DescribeInstancesInput{}
 	if len(tag) > 0 {
 		if !strings.Contains(tag, ":") {
@@ -36,13 +46,6 @@ func GetEc2List(c *cli.Context) error {
 		})
 	}
 
-	if short {
-		input.Filters = append(input.Filters, &ec2.Filter{
-			Name:   aws.String("instance-state-name"),
-			Values: []*string{aws.String("running")},
-		})
-	}
-
 	client := saws.NewEc2Sess(profile, region)
 	resources, err := client.DescribeInstances(input)
 	if err != nil {
@@ -51,73 +54,6 @@ func GetEc2List(c *cli.Context) error {
 
 	if err := saws.PrintInstances(os.Stdout, resources); err != nil {
 		return fmt.Errorf("failed to print resources")
-	}
-
-	return nil
-}
-
-func GetEc2SystemLog(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	id := c.String("id")
-	if len(id) == 0 {
-		return fmt.Errorf("--id or -i option is required")
-	}
-
-	input := &ec2.GetConsoleOutputInput{
-		InstanceId: aws.String(id),
-	}
-
-	client := saws.NewEc2Sess(profile, region)
-	output, err := client.GetConsoleOutput(input)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	// 起動してからSystem Log出力されるまで時間差があるので、
-	// Outputがなかったらreturnする
-	if output.Output == nil {
-		fmt.Println("No logs yet")
-		return nil
-	}
-
-	d, err := util.DecodeString(*output.Output)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	fmt.Println(d)
-
-	return nil
-}
-
-func TerminateEc2(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	id := c.String("id")
-	if len(id) == 0 {
-		return fmt.Errorf("--instanceid or -i option is required")
-	}
-
-	if !util.Confirm(id) {
-		fmt.Println("\nCancel")
-		return nil
-	}
-
-	input := &ec2.TerminateInstancesInput{
-		InstanceIds: aws.StringSlice([]string{id}),
-	}
-
-	client := saws.NewEc2Sess(profile, region)
-	output, err := client.TerminateInstances(input)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	for _, o := range output.TerminatingInstances {
-		fmt.Printf("\nInstanceId %v is terminated\n", *o.InstanceId)
 	}
 
 	return nil

@@ -10,15 +10,57 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ssm"
+
 	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func StartSession(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var Ssm = &cli.Command{
+	Name:  "ssm",
+	Usage: "Start a session on your instances by launching bash or shell terminal",
+	Action: func(c *cli.Context) error {
+		return startSession(c.String("profile"), c.String("region"))
+	},
+	Subcommands: []*cli.Command{
+		{
+			Name:      "command",
+			Aliases:   []string{"cmd"},
+			Usage:     "Runs shell script to target instances",
+			ArgsUsage: "[ --tag | -t ] <Key:Value> [ --id | -i ] <InstanceId> [ --file | -f ] <ScriptFile>",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "tag",
+					Aliases: []string{"t"},
+					Usage:   "Set Key-Value of the tag (e.g. -t Name:test-ec2)",
+				},
+				&cli.StringFlag{
+					Name:    "id",
+					Aliases: []string{"i"},
+					Usage:   "Set EC2 instance id",
+				},
+				&cli.StringFlag{
+					Name:    "file",
+					Aliases: []string{"f"},
+					Usage:   "Set execute file",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return sendCommand(c.String("profile"), c.String("region"), c.String("tag"), c.String("id"), c.String("file"), c.Args())
+			},
+		},
+		{
+			Name:    "parameter",
+			Aliases: []string{"param"},
+			Usage:   "Get parameter store",
+			Action: func(c *cli.Context) error {
+				return startSession(c.String("profile"), c.String("region"))
+			},
+		},
+	},
+}
 
+func startSession(profile, region string) error {
 	ssmclient := saws.NewSsmSess(profile, region)
 
 	input := &ssm.DescribeInstanceInformationInput{
@@ -98,57 +140,21 @@ func StartSession(c *cli.Context) error {
 	return nil
 }
 
-func GetSsmHist(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-	flag := c.Bool("active")
-
-	state := "History"
-	if flag {
-		state = "Active"
-	}
-
-	input := &ssm.DescribeSessionsInput{
-		State: aws.String(state),
-	}
-
-	client := saws.NewSsmSess(profile, region)
-
-	hist, err := client.DescribeSessions(input)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	if err := saws.PrintSessHist(os.Stdout, hist); err != nil {
-		return fmt.Errorf("failed to print resources")
-	}
-
-	return nil
-}
-
-func SendCommand(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	args := c.Args()
-	file := c.String("file")
-	if len(args) == 0 && len(file) == 0 {
+func sendCommand(profile, region, tag, id, file string, args cli.Args) error {
+	if args.Len() == 0 && len(file) == 0 {
 		return fmt.Errorf("args or file is required")
 	}
 
-	id := c.String("id")
-	tag := c.String("tag")
 	if len(id) == 0 && len(tag) == 0 {
 		return fmt.Errorf("instance id or tag is required")
 	}
 
 	param := make(map[string][]*string)
 
-	if len(args) > 0 {
-		command := []*string{
-			aws.String(args[0]),
+	if args.Len() > 0 {
+		param["commands"] = []*string{
+			aws.String(args.Get(0)),
 		}
-		param["commands"] = command
 	}
 
 	if len(file) > 0 {
@@ -224,32 +230,7 @@ func SendCommand(c *cli.Context) error {
 	return nil
 }
 
-func GetCmdLog(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	client := saws.NewSsmSess(profile, region)
-
-	input := &ssm.ListCommandsInput{
-		MaxResults: aws.Int64(30),
-	}
-
-	logs, err := client.ListCommands(input)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	if err := saws.PrintCmdLogs(os.Stdout, logs); err != nil {
-		return fmt.Errorf("failed to print command logs")
-	}
-
-	return nil
-}
-
-func GetParameter(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
+func getParameter(profile, region string) error {
 	client := saws.NewSsmSess(profile, region)
 
 	params, err := client.DescribeParameters(&ssm.DescribeParametersInput{})

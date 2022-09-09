@@ -5,15 +5,31 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go/service/rds"
+
 	saws "github.com/sfuruya0612/snatch/internal/aws"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func GetRdsList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var Rds = &cli.Command{
+	Name:  "rds",
+	Usage: "Get a list of RDS resources",
+	Action: func(c *cli.Context) error {
+		return getRdsList(c.String("profile"), c.String("region"))
+	},
+	Subcommands: []*cli.Command{
+		{
+			Name:  "cluster",
+			Usage: "Get a list of RDS Cluster resources",
+			Action: func(c *cli.Context) error {
+				return getRdsClusterList(c.String("profile"), c.String("region"))
+			},
+		},
+	},
+}
 
+func getRdsList(profile, region string) error {
 	client := saws.NewRdsSess(profile, region)
+
 	resources, err := client.DescribeDBInstances(&rds.DescribeDBInstancesInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -26,10 +42,7 @@ func GetRdsList(c *cli.Context) error {
 	return nil
 }
 
-func GetRdsClusterList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
+func getRdsClusterList(profile, region string) error {
 	client := saws.NewRdsSess(profile, region)
 
 	clusters, err := client.DescribeDBClusters(&rds.DescribeDBClustersInput{})

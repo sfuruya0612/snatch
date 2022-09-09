@@ -99,28 +99,6 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, e
 	return list, nil
 }
 
-// GetConsoleOutput return ec2.GetConsoleOutputOutput
-// input ec2.GetConsoleOutputInput
-func (c *EC2) GetConsoleOutput(input *ec2.GetConsoleOutputInput) (*ec2.GetConsoleOutputOutput, error) {
-	output, err := c.Client.GetConsoleOutput(input)
-	if err != nil {
-		return nil, fmt.Errorf("get console output: %v", err)
-	}
-
-	return output, nil
-}
-
-// TerminateInstances return ec2.TerminateInstancesOutput
-// input ec2.TerminateInstancesInput
-func (c *EC2) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error) {
-	output, err := c.Client.TerminateInstances(input)
-	if err != nil {
-		return nil, fmt.Errorf("terminate instances: %v", err)
-	}
-
-	return output, nil
-}
-
 func PrintInstances(wrt io.Writer, resources Instances) error {
 	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
 	header := []string{

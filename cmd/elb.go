@@ -6,15 +6,30 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/elb"
 	"github.com/aws/aws-sdk-go/service/elbv2"
+
 	saws "github.com/sfuruya0612/snatch/internal/aws"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func GetElbList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var Elb = &cli.Command{
+	Name:  "elb",
+	Usage: "Get a list of ELB(Classic) resources.",
+	Action: func(c *cli.Context) error {
+		return getElbList(c.String("profile"), c.String("region"))
+	},
+}
 
+var ElbV2 = &cli.Command{
+	Name:  "elbv2",
+	Usage: "Get a list of ELB(Application & Network) resources",
+	Action: func(c *cli.Context) error {
+		return getElbV2List(c.String("profile"), c.String("region"))
+	},
+}
+
+func getElbList(profile, region string) error {
 	client := saws.NewElbSess(profile, region)
+
 	resources, err := client.DescribeLoadBalancers(&elb.DescribeLoadBalancersInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -27,11 +42,9 @@ func GetElbList(c *cli.Context) error {
 	return nil
 }
 
-func GetElbV2List(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
+func getElbV2List(profile, region string) error {
 	client := saws.NewElbV2Sess(profile, region)
+
 	resources, err := client.DescribeLoadBalancersV2(&elbv2.DescribeLoadBalancersInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)

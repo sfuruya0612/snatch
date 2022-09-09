@@ -1,7 +1,0 @@
-version: '3'
-services:
-    cli:
-        container_name: snatch
-        build: ./
-        volumes:
-            - "~/.aws:/root/.aws"

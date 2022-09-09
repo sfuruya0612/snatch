@@ -5,15 +5,31 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go/service/iam"
+
 	saws "github.com/sfuruya0612/snatch/internal/aws"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func GetUserList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var Iam = &cli.Command{
+	Name:  "iam",
+	Usage: "Get a list of IAM users",
+	Action: func(c *cli.Context) error {
+		return getUserList(c.String("profile"), c.String("region"))
+	},
+	Subcommands: []*cli.Command{
+		{
+			Name:  "role",
+			Usage: "Get a list of IAM role",
+			Action: func(c *cli.Context) error {
+				return getRoleList(c.String("profile"), c.String("region"))
+			},
+		},
+	},
+}
 
+func getUserList(profile, region string) error {
 	client := saws.NewIamSess(profile, region)
+
 	output, err := client.ListUsers(&iam.ListUsersInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -26,11 +42,9 @@ func GetUserList(c *cli.Context) error {
 	return nil
 }
 
-func GetRoleList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
+func getRoleList(profile, region string) error {
 	client := saws.NewIamSess(profile, region)
+
 	names, err := client.ListRoles(&iam.ListRolesInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)

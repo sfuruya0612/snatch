@@ -11,16 +11,80 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+
 	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func GetBucketList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var S3 = &cli.Command{
+	Name:  "s3",
+	Usage: "Get a list of S3 Buckets",
+	Action: func(c *cli.Context) error {
+		return getElbList(c.String("profile"), c.String("region"))
+	},
+	Subcommands: []*cli.Command{
+		{
+			Name:      "object",
+			Usage:     "Get S3 object list",
+			ArgsUsage: "[ --bucket | -b ] <BucketName>",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "bucket",
+					Aliases: []string{"b"},
+					Usage:   "Set bucket name",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return getObjectList(c.String("profile"), c.String("region"), c.String("bucket"))
+			},
+		},
+		{
+			Name:      "cat",
+			Usage:     "Desplay S3 object file",
+			ArgsUsage: "[ --bucket | -b ] <BucketName> [ --key | -k ] <ObjectKey>",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "bucket",
+					Aliases: []string{"b"},
+					Usage:   "Set bucket name",
+				},
+				&cli.StringFlag{
+					Name:    "key",
+					Aliases: []string{"k"},
+					Usage:   "Set object key",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return catObject(c.String("profile"), c.String("region"), c.String("bucket"), c.String("key"))
+			},
+		},
+		{
+			Name:      "download",
+			Usage:     "Download S3 object file",
+			ArgsUsage: "[ --bucket | -b ] <BucketName> [ --key | -k ] <ObjectKey>",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "bucket",
+					Aliases: []string{"b"},
+					Usage:   "Set bucket name",
+				},
+				&cli.StringFlag{
+					Name:    "key",
+					Aliases: []string{"k"},
+					Usage:   "Set object key",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return downloadObject(c.String("profile"), c.String("region"), c.String("bucket"), c.String("key"))
+			},
+		},
+	},
+}
 
+func getBucketList(profile, region string) error {
 	client := saws.NewS3Sess(profile, region)
+
 	buckets, err := client.ListBuckets(&s3.ListBucketsInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -33,12 +97,7 @@ func GetBucketList(c *cli.Context) error {
 	return nil
 }
 
-func GetObjectList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	bucket := c.String("bucket")
-
+func getObjectList(profile, region, bucket string) error {
 	client := saws.NewS3Sess(profile, region)
 
 	if len(bucket) == 0 {
@@ -69,13 +128,7 @@ func GetObjectList(c *cli.Context) error {
 	return nil
 }
 
-func CatObject(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	bucket := c.String("bucket")
-	key := c.String("key")
-
+func catObject(profile, region, bucket, key string) error {
 	if len(bucket) == 0 || len(key) == 0 {
 		return fmt.Errorf("--bucket and --key is required")
 	}
@@ -120,13 +173,7 @@ func CatObject(c *cli.Context) error {
 	return nil
 }
 
-func DownloadObject(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	bucket := c.String("bucket")
-	key := c.String("key")
-
+func downloadObject(profile, region, bucket, key string) error {
 	if len(bucket) == 0 || len(key) == 0 {
 		return fmt.Errorf("--bucket and --key is required")
 	}

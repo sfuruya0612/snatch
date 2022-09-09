@@ -7,14 +7,30 @@ import (
 	"github.com/aws/aws-sdk-go/service/elasticache"
 
 	saws "github.com/sfuruya0612/snatch/internal/aws"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func GetEcClusterList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var ElastiCache = &cli.Command{
+	Name:    "elasticache",
+	Aliases: []string{"ec"},
+	Usage:   "Get a list of ElastiCache Cluster resources",
+	Action: func(c *cli.Context) error {
+		return getEcClusterList(c.String("profile"), c.String("region"))
+	},
+	Subcommands: []*cli.Command{
+		{
+			Name:  "node",
+			Usage: "Get a list of ElastiCache Node resources",
+			Action: func(c *cli.Context) error {
+				return getEcClusterList(c.String("profile"), c.String("region"))
+			},
+		},
+	},
+}
 
+func getEcClusterList(profile, region string) error {
 	client := saws.NewElastiCacheSess(profile, region)
+
 	resources, err := client.DescribeCacheClusters(&elasticache.DescribeCacheClustersInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -27,11 +43,9 @@ func GetEcClusterList(c *cli.Context) error {
 	return nil
 }
 
-func GetEcGroupsList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
+func getEcGroupsList(profile, region string) error {
 	client := saws.NewElastiCacheSess(profile, region)
+
 	resources, err := client.DescribeReplicationGroups(&elasticache.DescribeReplicationGroupsInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)

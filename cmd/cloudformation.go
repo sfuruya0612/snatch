@@ -6,16 +6,58 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+
 	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func GetStacksList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var CloudFormation = &cli.Command{
+	Name:    "cloudformation",
+	Aliases: []string{"cfn"},
+	Usage:   "Get a list of stacks",
+	Action: func(c *cli.Context) error {
+		return getStacksList(c.String("profile"), c.String("region"))
+	},
+	Subcommands: []*cli.Command{
+		{
+			Name:      "events",
+			Usage:     "Get stack events",
+			ArgsUsage: "[ --name | -n ] <CfnStackName>",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "name",
+					Aliases:  []string{"n"},
+					Usage:    "Set stack name",
+					Required: true,
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return getStackEvents(c.String("profile"), c.String("region"), c.String("name"))
+			},
+		},
+		{
+			Name:      "delete",
+			Usage:     "Delete stack",
+			ArgsUsage: "[ --name | -n ] <CfnStackName>",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "name",
+					Aliases:  []string{"n"},
+					Usage:    "Set stack name",
+					Required: true,
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return deleteStack(c.String("profile"), c.String("region"), c.String("name"))
+			},
+		},
+	},
+}
 
+func getStacksList(profile, region string) error {
 	client := saws.NewCfnSess(profile, region)
+
 	resources, err := client.DescribeStacks(&cloudformation.DescribeStacksInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -28,15 +70,7 @@ func GetStacksList(c *cli.Context) error {
 	return nil
 }
 
-func GetStackEvents(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	name := c.String("name")
-	if len(name) == 0 {
-		return fmt.Errorf("--name or -n option is required")
-	}
-
+func getStackEvents(profile, region, name string) error {
 	input := &cloudformation.DescribeStackEventsInput{
 		StackName: aws.String(name),
 	}
@@ -54,15 +88,7 @@ func GetStackEvents(c *cli.Context) error {
 	return nil
 }
 
-func DeleteStack(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	name := c.String("name")
-	if len(name) == 0 {
-		return fmt.Errorf("--name or -n option is required")
-	}
-
+func deleteStack(profile, region, name string) error {
 	input := &cloudformation.DescribeStacksInput{
 		StackName: aws.String(name),
 	}

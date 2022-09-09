@@ -6,16 +6,55 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
+
 	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func GetASGList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var AutoScaling = &cli.Command{
+	Name:    "autoscaling",
+	Aliases: []string{"as"},
+	Usage:   "Get a list of EC2 AutoScalingGroups",
+	Action: func(c *cli.Context) error {
+		return getASGList(c.String("profile"), c.String("region"))
+	},
+	Subcommands: []*cli.Command{
+		{
+			Name:      "capacity",
+			Aliases:   []string{"cap"},
+			Usage:     "Update autoscaling group capacity",
+			ArgsUsage: "[ --name | -n ] <AutoScalingGroupName> [ --desired ] <CapacityNum> [ --min ]  <CapacityNum> [ --max ] <CapacityNum> ",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "name",
+					Aliases:  []string{"n"},
+					Usage:    "Set target autoscaling group name",
+					Required: true,
+				},
+				&cli.Int64Flag{
+					Name:  "desired",
+					Usage: "Set desired capacity",
+				},
+				&cli.Int64Flag{
+					Name:  "min",
+					Usage: "Set minimum capacity",
+				},
+				&cli.Int64Flag{
+					Name:  "max",
+					Usage: "Set maximum capacity",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return updateCapacity(c.String("profile"), c.String("region"), c.String("name"), c.Int64("desired"), c.Int64("min"), c.Int64("max"))
+			},
+		},
+	},
+}
 
+func getASGList(profile, region string) error {
 	client := saws.NewAsgSess(profile, region)
+
 	groups, err := client.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -28,19 +67,7 @@ func GetASGList(c *cli.Context) error {
 	return nil
 }
 
-func UpdateCapacity(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	name := c.String("name")
-	desired := c.Int64("desired")
-	min := c.Int64("min")
-	max := c.Int64("max")
-
-	if len(name) == 0 {
-		return fmt.Errorf("--name or -n option is required")
-	}
-
+func updateCapacity(profile, region, name string, desired, min, max int64) error {
 	// desired, min, maxの値の関係性を確認
 	if max < min || desired < min || max < desired {
 		return fmt.Errorf("capacity options number have incorrect relationship")
