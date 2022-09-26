@@ -21,7 +21,7 @@ var S3 = &cli.Command{
 	Name:  "s3",
 	Usage: "Get a list of S3 Buckets",
 	Action: func(c *cli.Context) error {
-		return getElbList(c.String("profile"), c.String("region"))
+		return getBucketList(c.String("profile"), c.String("region"))
 	},
 	Subcommands: []*cli.Command{
 		{
