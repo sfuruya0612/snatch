@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ssm"
 
 	saws "github.com/sfuruya0612/snatch/internal/aws"
@@ -80,7 +80,7 @@ func startSession(profile, region string) error {
 	ec2client := saws.NewEc2Sess(profile, region)
 
 	ec2input := &ec2.DescribeInstancesInput{
-		InstanceIds: aws.StringSlice(ids),
+		InstanceIds: ids,
 	}
 
 	// ssm.DescribeInstanceInformation では NameTag が取得できない

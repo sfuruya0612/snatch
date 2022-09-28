@@ -1,28 +1,30 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sort"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
-// EC2 client struct
+// EC2 structure is ec2 client.
 type EC2 struct {
-	Client *ec2.EC2
+	Client *ec2.Client
 }
 
-// NewEc2Sess return EC2 struct initialized
+// NewEc2Sess returns EC2 struct initialized.
+// TODO: rename this function.
 func NewEc2Sess(profile, region string) *EC2 {
 	return &EC2{
-		Client: ec2.New(GetSession(profile, region)),
+		Client: ec2.NewFromConfig(GetSessionV2(profile, region)),
 	}
 }
 
-// Instance ec2 instance struct
+// Instance structure ec2 is ec2 instance infomation.
 type Instance struct {
 	Name             string
 	InstanceId       string
@@ -35,18 +37,19 @@ type Instance struct {
 	LaunchTime       string
 }
 
-// Instances Instance struct slice
-type Instances []Instance
-
-// DescribeInstances return Instances
-// input ec2.DescribeInstancesInput
-func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, error) {
-	output, err := c.Client.DescribeInstances(input)
+// DescribeInstances returns slice Instance structure.
+func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) ([]Instance, error) {
+	ctx := context.TODO()
+	output, err := c.Client.DescribeInstances(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("describe instances: %v", err)
 	}
 
-	list := Instances{}
+	if len(output.Reservations) == 0 {
+		return nil, fmt.Errorf("no resources")
+	}
+
+	list := []Instance{}
 	for _, r := range output.Reservations {
 		for _, i := range r.Instances {
 			name := ""
@@ -78,18 +81,15 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, e
 			list = append(list, Instance{
 				Name:             name,
 				InstanceId:       *i.InstanceId,
-				InstanceType:     *i.InstanceType,
+				InstanceType:     string(i.InstanceType),
 				PrivateIpAddress: priip,
 				PublicIpAddress:  pubip,
-				State:            *i.State.Name,
+				State:            string(i.State.Name),
 				KeyName:          key,
 				AvailabilityZone: az,
 				LaunchTime:       i.LaunchTime.String(),
 			})
 		}
-	}
-	if len(list) == 0 {
-		return nil, fmt.Errorf("no resources")
 	}
 
 	sort.Slice(list, func(i, j int) bool {
@@ -99,7 +99,7 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, e
 	return list, nil
 }
 
-func PrintInstances(wrt io.Writer, resources Instances) error {
+func PrintInstances(wrt io.Writer, resources []Instance) error {
 	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
 	header := []string{
 		"Name",

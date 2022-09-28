@@ -5,8 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
 	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/urfave/cli/v2"
@@ -40,9 +41,9 @@ func getEc2List(profile, region, tag string) error {
 			return fmt.Errorf("parse tag=%s", tag)
 		}
 
-		input.Filters = append(input.Filters, &ec2.Filter{
+		input.Filters = append(input.Filters, types.Filter{
 			Name:   aws.String("tag:" + spl[0]),
-			Values: []*string{aws.String(spl[1])},
+			Values: []string{spl[1]},
 		})
 	}
 
