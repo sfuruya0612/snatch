@@ -53,7 +53,6 @@ build: test
 
 .PHONY: install
 install:
-	-rm ${GOPATH}/bin/${NAME}
 	go install -ldflags "${LDFLAGS}"
 
 .PHONY: clean

@@ -17,14 +17,13 @@ type EC2 struct {
 }
 
 // NewEc2Sess returns EC2 struct initialized.
-// TODO: rename this function.
-func NewEc2Sess(profile, region string) *EC2 {
+func NewEc2Client(profile, region string) *EC2 {
 	return &EC2{
 		Client: ec2.NewFromConfig(GetSessionV2(profile, region)),
 	}
 }
 
-// Instance structure ec2 is ec2 instance infomation.
+// Instance structure is ec2 instance information.
 type Instance struct {
 	Name             string
 	InstanceId       string
@@ -114,17 +113,17 @@ func PrintInstances(wrt io.Writer, resources []Instance) error {
 	}
 
 	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("header join: %v", err)
 	}
 
 	for _, r := range resources {
 		if _, err := fmt.Fprintln(w, r.Ec2TabString()); err != nil {
-			return fmt.Errorf("%v", err)
+			return fmt.Errorf("resources join: %v", err)
 		}
 	}
 
 	if err := w.Flush(); err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("flush: %v", err)
 	}
 
 	return nil

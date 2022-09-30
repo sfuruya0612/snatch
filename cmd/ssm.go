@@ -77,7 +77,7 @@ func startSession(profile, region string) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	ec2client := saws.NewEc2Sess(profile, region)
+	ec2client := saws.NewEc2Client(profile, region)
 
 	ec2input := &ec2.DescribeInstancesInput{
 		InstanceIds: ids,

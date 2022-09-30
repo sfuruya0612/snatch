@@ -15,7 +15,7 @@ import (
 
 var Ec2 = &cli.Command{
 	Name:      "ec2",
-	Usage:     "Get a list of EC2 resources",
+	Usage:     "Get a list of EC2 instance",
 	ArgsUsage: "[ --tag | -t ] <Key:Value>",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
@@ -47,14 +47,14 @@ func getEc2List(profile, region, tag string) error {
 		})
 	}
 
-	client := saws.NewEc2Sess(profile, region)
-	resources, err := client.DescribeInstances(input)
+	c := saws.NewEc2Client(profile, region)
+	instances, err := c.DescribeInstances(input)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
-	if err := saws.PrintInstances(os.Stdout, resources); err != nil {
-		return fmt.Errorf("failed to print resources")
+	if err := saws.PrintInstances(os.Stdout, instances); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
