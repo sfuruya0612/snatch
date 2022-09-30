@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aws/aws-sdk-go/service/rds"
+	"github.com/aws/aws-sdk-go-v2/service/rds"
 
 	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/urfave/cli/v2"
@@ -12,46 +12,72 @@ import (
 
 var Rds = &cli.Command{
 	Name:  "rds",
-	Usage: "Get a list of RDS resources",
+	Usage: "Get a list of RDS instance",
 	Action: func(c *cli.Context) error {
 		return getRdsList(c.String("profile"), c.String("region"))
 	},
 	Subcommands: []*cli.Command{
 		{
-			Name:  "cluster",
-			Usage: "Get a list of RDS Cluster resources",
+			Name:    "cluster",
+			Aliases: []string{"c"},
+			Usage:   "Get a list of RDS cluster",
 			Action: func(c *cli.Context) error {
 				return getRdsClusterList(c.String("profile"), c.String("region"))
+			},
+			Subcommands: []*cli.Command{
+				{
+					Name:    "endpoint",
+					Aliases: []string{"e"},
+					Usage:   "Get a list of RDS cluster endpoint",
+					Action: func(c *cli.Context) error {
+						return getRdsClusterEndpoints(c.String("profile"), c.String("region"))
+					},
+				},
 			},
 		},
 	},
 }
 
 func getRdsList(profile, region string) error {
-	client := saws.NewRdsSess(profile, region)
+	c := saws.NewRdsClient(profile, region)
 
-	resources, err := client.DescribeDBInstances(&rds.DescribeDBInstancesInput{})
+	instances, err := c.DescribeDBInstances(&rds.DescribeDBInstancesInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
-	if err := saws.PrintDBInstances(os.Stdout, resources); err != nil {
-		return fmt.Errorf("failed to print resources")
+	if err := saws.PrintDBInstances(os.Stdout, instances); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
 func getRdsClusterList(profile, region string) error {
-	client := saws.NewRdsSess(profile, region)
+	c := saws.NewRdsClient(profile, region)
 
-	clusters, err := client.DescribeDBClusters(&rds.DescribeDBClustersInput{})
+	clusters, err := c.DescribeDBClusters(&rds.DescribeDBClustersInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
 	if err := saws.PrintDBClusters(os.Stdout, clusters); err != nil {
-		return fmt.Errorf("failed to print resources")
+		return fmt.Errorf("%v", err)
+	}
+
+	return nil
+}
+
+func getRdsClusterEndpoints(profile, region string) error {
+	c := saws.NewRdsClient(profile, region)
+
+	endpoints, err := c.DescribeDBClusterEndpoints(&rds.DescribeDBClusterEndpointsInput{})
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	if err := saws.PrintDBClusterEndpoints(os.Stdout, endpoints); err != nil {
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
