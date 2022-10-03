@@ -1,139 +1,122 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sort"
-	"strconv"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/service/elasticache"
+	"github.com/imdario/mergo"
 )
 
-// ElastiCache client struct
+// ElastiCache structure is elasticache client.
 type ElastiCache struct {
-	Client *elasticache.ElastiCache
+	Client *elasticache.Client
 }
 
-// NewElastiCacheSess return ElastiCache struct initialized
-func NewElastiCacheSess(profile, region string) *ElastiCache {
+// NewElastiCacheClient return ElastiCache struct initialized.
+func NewElastiCacheClient(profile, region string) *ElastiCache {
 	return &ElastiCache{
-		Client: elasticache.New(GetSession(profile, region)),
+		Client: elasticache.NewFromConfig(GetSessionV2(profile, region)),
 	}
 }
 
-// CacheNode elasticache cachenode struct
+// CacheNode structure is elasticache node information.
 type CacheNode struct {
-	Name               string
+	ReplicationGroupId string
+	CacheClusterId     string
+	CacheNodeId        string
 	CacheNodeType      string
 	Engine             string
 	EngineVersion      string
-	CacheClusterStatus string
-	Status             string
-	Endpoint           string
-	Port               string
-	CacheClusterId     string
-	CacheNodeId        string
 	CurrentRole        string
+	CacheClusterStatus string
+	CacheNodeStatus    string
 }
 
-// CacheNodes CacheNode struct slice
-type CacheNodes []CacheNode
-
-// DescribeCacheClusters return CacheNodes
-// input elasticache.DescribeCacheClustersInput
-func (c *ElastiCache) DescribeCacheClusters(input *elasticache.DescribeCacheClustersInput) (CacheNodes, error) {
-	output, err := c.Client.DescribeCacheClusters(input)
+// DescribeCacheClusters returns slice CacheNode structure.
+func (c *ElastiCache) DescribeCacheClusters(input *elasticache.DescribeCacheClustersInput) ([]CacheNode, error) {
+	ctx := context.TODO()
+	output, err := c.Client.DescribeCacheClusters(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("describe cache cluster: %v", err)
 	}
 
-	list := CacheNodes{}
-	for _, i := range output.CacheClusters {
+	if len(output.CacheClusters) == 0 {
+		return nil, fmt.Errorf("no resources")
+	}
+
+	list := []CacheNode{}
+	for _, cc := range output.CacheClusters {
+		replicationGroupId := "None"
+		if cc.ReplicationGroupId != nil {
+			replicationGroupId = *cc.ReplicationGroupId
+		}
+
 		list = append(list, CacheNode{
-			Name:               *i.CacheClusterId,
-			CacheNodeType:      *i.CacheNodeType,
-			Engine:             *i.Engine,
-			EngineVersion:      *i.EngineVersion,
-			CacheClusterStatus: *i.CacheClusterStatus,
+			ReplicationGroupId: replicationGroupId,
+			CacheClusterId:     *cc.CacheClusterId,
+			CacheNodeType:      *cc.CacheNodeType,
+			Engine:             *cc.Engine,
+			EngineVersion:      *cc.EngineVersion,
+			CacheClusterStatus: *cc.CacheClusterStatus,
 		})
 	}
-	if len(list) == 0 {
-		return nil, fmt.Errorf("no resources")
-	}
 
 	sort.Slice(list, func(i, j int) bool {
-		return list[i].Name < list[j].Name
+		return list[i].ReplicationGroupId < list[j].ReplicationGroupId
 	})
 
 	return list, nil
 }
 
-// DescribeReplicationGroups return CacheNodes
-// input elasticache.DescribeCacheClustersInput
-func (c *ElastiCache) DescribeReplicationGroups(input *elasticache.DescribeReplicationGroupsInput) (CacheNodes, error) {
-	output, err := c.Client.DescribeReplicationGroups(input)
+// DescribeReplicationGroups returns CacheNode structure.
+func (c *ElastiCache) DescribeReplicationGroups(input *elasticache.DescribeReplicationGroupsInput, node CacheNode) (CacheNode, error) {
+	ctx := context.TODO()
+	output, err := c.Client.DescribeReplicationGroups(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("describe replication groups: %v", err)
+		return CacheNode{}, fmt.Errorf("describe replication groups: %v", err)
 	}
 
-	list := CacheNodes{}
-	for _, i := range output.ReplicationGroups {
-		var (
-			endpoint string
-			port     string
-		)
-
-		if i.ConfigurationEndpoint != nil {
-			endpoint = *i.ConfigurationEndpoint.Address
-			port = strconv.FormatInt(*i.ConfigurationEndpoint.Port, 10)
-		}
-
-		for _, n := range i.NodeGroups {
-			if n.PrimaryEndpoint != nil {
-				endpoint = *n.PrimaryEndpoint.Address
-				port = strconv.FormatInt(*n.PrimaryEndpoint.Port, 10)
-			}
-
-			for _, nm := range n.NodeGroupMembers {
+	for _, rg := range output.ReplicationGroups {
+		for _, ng := range rg.NodeGroups {
+			for _, ngm := range ng.NodeGroupMembers {
 				role := "None"
-				if nm.CurrentRole != nil {
-					role = *nm.CurrentRole
+				if ngm.CurrentRole != nil {
+					role = *ngm.CurrentRole
 				}
 
-				list = append(list, CacheNode{
-					Name:           *i.ReplicationGroupId,
-					Status:         *i.Status,
-					Endpoint:       endpoint,
-					Port:           port,
-					CacheClusterId: *nm.CacheClusterId,
-					CacheNodeId:    *nm.CacheNodeId,
-					CurrentRole:    role,
-				})
+				dst := CacheNode{
+					CacheNodeId:     *ngm.CacheNodeId,
+					CurrentRole:     role,
+					CacheNodeStatus: *ng.Status,
+				}
+				if err := mergo.Merge(&node, dst, mergo.WithOverride); err != nil {
+					return CacheNode{}, fmt.Errorf("struct merge: %v", err)
+				}
+				fmt.Printf("%#v\n", node)
 			}
 		}
-
-	}
-	if len(list) == 0 {
-		return nil, fmt.Errorf("no resources")
 	}
 
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].Name < list[j].Name
-	})
-
-	return list, nil
+	return node, nil
 }
 
-func PrintCacheClusters(wrt io.Writer, resources CacheNodes) error {
+func PrintNodes(wrt io.Writer, resources []CacheNode) error {
 	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
 	header := []string{
-		"Name",
+		"ReplicationGroupId",
+		"CacheClusterId",
+		// "CacheNodeId",
 		"CacheNodeType",
 		"Engine",
 		"EngineVersion",
+		// "CurrentRole",
 		"CacheClusterStatus",
+		// "CacheNodeStatus",
 	}
 
 	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
@@ -141,7 +124,7 @@ func PrintCacheClusters(wrt io.Writer, resources CacheNodes) error {
 	}
 
 	for _, r := range resources {
-		if _, err := fmt.Fprintln(w, r.CcTabString()); err != nil {
+		if _, err := fmt.Fprintln(w, r.NodeTabString()); err != nil {
 			return fmt.Errorf("%v", err)
 		}
 	}
@@ -153,56 +136,17 @@ func PrintCacheClusters(wrt io.Writer, resources CacheNodes) error {
 	return nil
 }
 
-func (i *CacheNode) CcTabString() string {
+func (i *CacheNode) NodeTabString() string {
 	fields := []string{
-		i.Name,
+		i.ReplicationGroupId,
+		i.CacheClusterId,
+		// i.CacheNodeId,
 		i.CacheNodeType,
 		i.Engine,
 		i.EngineVersion,
+		// i.CurrentRole,
 		i.CacheClusterStatus,
-	}
-
-	return strings.Join(fields, "\t")
-}
-
-func PrintRepricationGroups(wrt io.Writer, resources CacheNodes) error {
-	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
-	header := []string{
-		"Name",
-		"Status",
-		"Endpoint",
-		"Port",
-		"CacheClusterId",
-		"CacheNodeId",
-		"CurrentRole",
-	}
-
-	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	for _, r := range resources {
-		if _, err := fmt.Fprintln(w, r.RgTabString()); err != nil {
-			return fmt.Errorf("%v", err)
-		}
-	}
-
-	if err := w.Flush(); err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	return nil
-}
-
-func (i *CacheNode) RgTabString() string {
-	fields := []string{
-		i.Name,
-		i.Status,
-		i.Endpoint,
-		i.Port,
-		i.CacheClusterId,
-		i.CacheNodeId,
-		i.CurrentRole,
+		// i.CacheNodeStatus,
 	}
 
 	return strings.Join(fields, "\t")

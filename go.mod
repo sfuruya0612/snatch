@@ -18,7 +18,9 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.16.16
 	github.com/aws/aws-sdk-go-v2/config v1.17.7
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.60.0
+	github.com/aws/aws-sdk-go-v2/service/elasticache v1.22.10
 	github.com/aws/aws-sdk-go-v2/service/rds v1.26.1
+	github.com/imdario/mergo v0.3.13
 	github.com/urfave/cli/v2 v2.14.1
 )
 
