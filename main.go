@@ -17,9 +17,7 @@ var Commands = []*cli.Command{
 	cmd.Ec2,
 	cmd.Rds,
 	cmd.ElastiCache,
-	// TODO: elb は一緒にしたい
 	cmd.Elb,
-	cmd.ElbV2,
 	cmd.Route53,
 	cmd.S3,
 	cmd.Ssm,
