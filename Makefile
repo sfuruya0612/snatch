@@ -23,7 +23,11 @@ vet:
 
 .PHONY: tidy
 tidy:
-	go mod tidy -v -go=1.19
+	go mod tidy -v -go=1.20
+
+.PHONY: update
+update:
+	go get -u ./...
 
 .PHONY: golangci-lint
 golangci-lint:
@@ -33,29 +37,6 @@ golangci-lint:
 test: prepare
 	go test -v -race --cover ./...
 
-.PHONY: build
-build: test
-	-mkdir build
-
-	GOOS=linux GOARGH=amd64 go build -ldflags "${LDFLAGS}"
-	zip build/${NAME}_linux_amd64.zip ${NAME}
-
-	GOOS=linux GOARGH=arm64 go build -ldflags "${LDFLAGS}"
-	zip build/${NAME}_linux_arm64.zip ${NAME}
-
-	GOOS=darwin GOARGH=amd64 go build -ldflags "${LDFLAGS}"
-	zip build/${NAME}_darwin_amd64.zip ${NAME}
-
-	GOOS=darwin GOARGH=arm64 go build -ldflags "${LDFLAGS}"
-	zip build/${NAME}_darwin_arm64.zip ${NAME}
-
-	@rm ${NAME}
-
 .PHONY: install
 install:
 	go install -ldflags "${LDFLAGS}"
-
-.PHONY: clean
-clean:
-	-rm ${GOPATH}/bin/${NAME}
-	-rm -rf build
