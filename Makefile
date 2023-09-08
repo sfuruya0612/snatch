@@ -23,7 +23,7 @@ vet:
 
 .PHONY: tidy
 tidy:
-	go mod tidy -v -go=1.20
+	go mod tidy -v -go=1.21
 
 .PHONY: update
 update:

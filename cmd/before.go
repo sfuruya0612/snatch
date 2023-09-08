@@ -12,10 +12,10 @@ var style = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#04B575"))
 
 func Before(c *cli.Context) error {
-	profile := c.String("profile")
-	region := c.String("region")
+	p := c.String("profile")
+	r := c.String("region")
 
-	fmt.Println(style.Render("Profile: "+profile, "Region: "+region))
+	fmt.Println(style.Render("Profile: "+p, "Region: "+r))
 
 	return nil
 }
