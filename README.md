@@ -17,11 +17,11 @@ The concept is that you can continue to work on checking resources without havin
 
 ## Getting started
 
-### Supported versions / OS
+### Supported / OS
 
-| OS / Laungage | Versions          |
-| :------------ | :---------------- |
-| OS            | MacOS </br> Linux |
+| OS  | Versions          |
+| :-- | :---------------- |
+| OS  | MacOS </br> Linux |
 
 ### Install
 

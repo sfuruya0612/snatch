@@ -22,7 +22,6 @@ var Commands = []*cli.Command{
 	cmd.S3,
 	cmd.Ssm,
 	cmd.CloudFormation,
-	cmd.AutoScaling,
 	cmd.Iam,
 }
 
