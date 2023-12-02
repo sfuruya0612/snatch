@@ -11,7 +11,7 @@ init:
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 .PHONY: prepare
-prepare: fmt vet tidy
+prepare: fmt vet tidy golangci-lint
 
 .PHONY: fmt
 fmt:

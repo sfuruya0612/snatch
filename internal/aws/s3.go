@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sort"
@@ -8,31 +9,18 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 // S3 client struct
 type S3 struct {
-	Client *s3.S3
+	Client *s3.Client
 }
 
 // NewS3Sess return S3 struct initialized
-func NewS3Sess(profile, region string) *S3 {
+func NewS3Client(profile, region string) *S3 {
 	return &S3{
-		Client: s3.New(GetSession(profile, region)),
-	}
-}
-
-// S3Downloader client struct
-type S3Downloader struct {
-	Client *s3manager.Downloader
-}
-
-// NewS3DownloaderSess return S3Manager Downloader struct initialized
-func NewS3DownloaderSess(profile, region string) *S3Downloader {
-	return &S3Downloader{
-		Client: s3manager.NewDownloader(GetSession(profile, region)),
+		Client: s3.NewFromConfig(GetSessionV2(profile, region)),
 	}
 }
 
@@ -49,7 +37,7 @@ type Objects []Object
 // ListBuckets return []string (s3.ListBuckets.Buckets)
 // input s3.ListBucketsInput
 func (c *S3) ListBuckets(input *s3.ListBucketsInput) ([]string, error) {
-	output, err := c.Client.ListBuckets(input)
+	output, err := c.Client.ListBuckets(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("list buckets: %v", err)
 	}
@@ -70,7 +58,7 @@ func (c *S3) ListBuckets(input *s3.ListBucketsInput) ([]string, error) {
 // ListObjects return Objects
 // input s3.ListObjectsV2Input
 func (c *S3) ListObjects(input *s3.ListObjectsV2Input) (Objects, error) {
-	output, err := c.Client.ListObjectsV2(input)
+	output, err := c.Client.ListObjectsV2(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("list objects: %v", err)
 	}
@@ -100,23 +88,12 @@ func (c *S3) ListObjects(input *s3.ListObjectsV2Input) (Objects, error) {
 // GetObject return io.ReadCloser
 // input s3.GetObjectInput
 func (c *S3) GetObject(input *s3.GetObjectInput) (io.ReadCloser, error) {
-	output, err := c.Client.GetObject(input)
+	output, err := c.Client.GetObject(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("get object: %v", err)
 	}
 
 	return output.Body, nil
-}
-
-// Download return int64
-// input io.WriterAt, s3.GetObjectInput
-func (c *S3Downloader) Download(w io.WriterAt, input *s3.GetObjectInput) (int64, error) {
-	output, err := c.Client.Download(w, input)
-	if err != nil {
-		return 0, fmt.Errorf("get object: %v", err)
-	}
-
-	return output, nil
 }
 
 func PrintObjects(wrt io.Writer, resources Objects) error {

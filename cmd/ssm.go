@@ -54,7 +54,7 @@ var Ssm = &cli.Command{
 			Aliases: []string{"param"},
 			Usage:   "Get parameter store",
 			Action: func(c *cli.Context) error {
-				return startSession(c.String("profile"), c.String("region"))
+				return getParameter(c.String("profile"), c.String("region"))
 			},
 		},
 	},
