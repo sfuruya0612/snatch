@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
 
 	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/urfave/cli/v2"
@@ -19,7 +19,7 @@ var Route53 = &cli.Command{
 }
 
 func getRecordsList(profile, region string) error {
-	client := saws.NewRoute53Sess(profile, region)
+	client := saws.NewRoute53Client(profile, region)
 
 	resources, err := client.ListHostedZones(&route53.ListHostedZonesInput{})
 	if err != nil {

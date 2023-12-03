@@ -1,25 +1,26 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
 )
 
 // Route53 client struct
 type Route53 struct {
-	Client *route53.Route53
+	Client *route53.Client
 }
 
 // NewRoute53Sess return Route53 struct initialized
-func NewRoute53Sess(profile, region string) *Route53 {
+func NewRoute53Client(profile, region string) *Route53 {
 	return &Route53{
-		Client: route53.New(GetSession(profile, region)),
+		Client: route53.NewFromConfig(GetSessionV2(profile, region)),
 	}
 }
 
@@ -38,7 +39,7 @@ type Records []Record
 // ListHostedZones return Records
 // input route53.ListHostedZonesInput
 func (c *Route53) ListHostedZones(input *route53.ListHostedZonesInput) (Records, error) {
-	zones, err := c.Client.ListHostedZones(input)
+	zones, err := c.Client.ListHostedZones(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("list hostedzones: %v", err)
 	}
@@ -52,8 +53,15 @@ func (c *Route53) ListHostedZones(input *route53.ListHostedZonesInput) (Records,
 			HostedZoneId: h.Id,
 		}
 
-		output := func(page *route53.ListResourceRecordSetsOutput, lastPage bool) bool {
-			for _, r := range page.ResourceRecordSets {
+		paginator := route53.NewListResourceRecordSetsPaginator(c.Client, rinput)
+
+		for paginator.HasMorePages() {
+			output, err := paginator.NextPage(context.Background())
+			if err != nil {
+				return nil, fmt.Errorf("list resource record sets: %v", err)
+			}
+
+			for _, r := range output.ResourceRecordSets {
 
 				if r.TTL == nil {
 					r.TTL = aws.Int64(0000)
@@ -76,16 +84,11 @@ func (c *Route53) ListHostedZones(input *route53.ListHostedZonesInput) (Records,
 				list = append(list, Record{
 					ZoneId:      zoneid,
 					DomainName:  *r.Name,
-					Type:        *r.Type,
+					Type:        string(r.Type),
 					TTL:         ttl,
 					DomainValue: value,
 				})
 			}
-			return true
-		}
-
-		if err := c.Client.ListResourceRecordSetsPages(rinput, output); err != nil {
-			return nil, fmt.Errorf("list resource record sets: %v", err)
 		}
 	}
 

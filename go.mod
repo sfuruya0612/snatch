@@ -5,7 +5,6 @@ go 1.21
 toolchain go1.21.1
 
 require (
-	github.com/aws/aws-sdk-go v1.48.11
 	github.com/manifoldco/promptui v0.9.0
 	golang.org/x/sys v0.15.0 // indirect
 )
@@ -20,6 +19,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.26.2
 	github.com/aws/aws-sdk-go-v2/service/iam v1.28.2
 	github.com/aws/aws-sdk-go-v2/service/rds v1.64.2
+	github.com/aws/aws-sdk-go-v2/service/route53 v1.35.2
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.2
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.44.2
 	github.com/charmbracelet/lipgloss v0.9.1
