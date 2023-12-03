@@ -1,2 +1,1 @@
-# Do not include build directory in the repository.
-build/*
+.DS_Store

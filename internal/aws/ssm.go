@@ -8,19 +8,20 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 )
 
 // SSM client struct
 type SSM struct {
-	Client *ssm.SSM
+	Client *ssm.Client
 }
 
 // NewSsmSess return SSM struct initialized
-func NewSsmSess(profile, region string) *SSM {
+func NewSsmClient(profile, region string) *SSM {
 	return &SSM{
-		Client: ssm.New(GetSession(profile, region)),
+		Client: ssm.NewFromConfig(GetSessionV2(profile, region)),
 	}
 }
 
@@ -72,15 +73,17 @@ type Parameters []Parameter
 // input ssm.DescribeInstanceInformationInput
 func (c *SSM) DescribeInstanceInformation(input *ssm.DescribeInstanceInformationInput) ([]string, error) {
 	ids := []string{}
-	output := func(page *ssm.DescribeInstanceInformationOutput, lastPage bool) bool {
+	paginator := ssm.NewDescribeInstanceInformationPaginator(c.Client, input)
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("describe instance information: %v", err)
+		}
+
 		for _, i := range page.InstanceInformationList {
 			ids = append(ids, *i.InstanceId)
 		}
-		return true
-	}
-
-	if err := c.Client.DescribeInstanceInformationPages(input, output); err != nil {
-		return nil, fmt.Errorf("describe instance information: %v", err)
 	}
 
 	return ids, nil
@@ -88,69 +91,36 @@ func (c *SSM) DescribeInstanceInformation(input *ssm.DescribeInstanceInformation
 
 // CreateStartSession return ssm.StartSessionOutput, string ()
 // input ssm.DescribeInstanceInformationInput
-func (c *SSM) CreateStartSession(input *ssm.StartSessionInput) (*ssm.StartSessionOutput, string, error) {
+func (c *SSM) StartSession(input *ssm.StartSessionInput) (*ssm.StartSessionOutput, error) {
 	subctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	sess, err := c.Client.StartSessionWithContext(subctx, input)
+	sess, err := c.Client.StartSession(subctx, input)
 	if err != nil {
-		return nil, "", err
+		return nil, fmt.Errorf("start session: %v", err)
 	}
 
-	return sess, c.Client.Endpoint, nil
+	return sess, nil
 
 }
 
 // DeleteStartSession return none (Only error)
 // input ssm.TerminateSessionInput
-func (c *SSM) DeleteStartSession(input *ssm.TerminateSessionInput) error {
+func (c *SSM) DeleteSession(input *ssm.TerminateSessionInput) error {
 	subctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	if _, err := c.Client.TerminateSessionWithContext(subctx, input); err != nil {
-		return err
+	if _, err := c.Client.TerminateSession(subctx, input); err != nil {
+		return fmt.Errorf("terminate session: %v", err)
 	}
 
 	return nil
 }
 
-// DescribeSessions return Sessions
-// input ssm.DescribeSessionsInput
-func (c *SSM) DescribeSessions(input *ssm.DescribeSessionsInput) (Sessions, error) {
-	output, err := c.Client.DescribeSessions(input)
-	if err != nil {
-		return nil, fmt.Errorf("describe sessions: %v", err)
-	}
-
-	list := Sessions{}
-	for _, l := range output.Sessions {
-		s := strings.Split(*l.Owner, "/")
-		owner := s[1]
-
-		enddate := "None"
-		if l.EndDate != nil {
-			enddate = l.EndDate.String()
-		}
-
-		list = append(list, Session{
-			SessionId: *l.SessionId,
-			Owner:     owner,
-			Target:    *l.Target,
-			StartDate: l.StartDate.String(),
-			EndDate:   enddate,
-		})
-	}
-	if len(list) == 0 {
-		return nil, fmt.Errorf("no historys")
-	}
-
-	return list, nil
-}
-
 // SendCommand return ssm.SendCommandOutput
 // input ssm.SendCommandInput
 func (c *SSM) SendCommand(input *ssm.SendCommandInput) (*ssm.SendCommandOutput, error) {
-	output, err := c.Client.SendCommand(input)
+	output, err := c.Client.SendCommand(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("command send: %v", err)
 	}
@@ -163,7 +133,7 @@ func (c *SSM) SendCommand(input *ssm.SendCommandInput) (*ssm.SendCommandOutput, 
 func (c *SSM) ListCommandInvocations(input *ssm.ListCommandInvocationsInput) (Responses, error) {
 	resp := Responses{}
 	for {
-		output, err := c.Client.ListCommandInvocations(input)
+		output, err := c.Client.ListCommandInvocations(context.TODO(), input)
 		if err != nil {
 			return nil, fmt.Errorf("list command invocation: %v", err)
 		}
@@ -175,7 +145,7 @@ func (c *SSM) ListCommandInvocations(input *ssm.ListCommandInvocationsInput) (Re
 
 		inprogress := false
 		for _, ci := range output.CommandInvocations {
-			if *ci.Status == "InProgress" {
+			if ci.Status == "InProgress" {
 				inprogress = true
 				break
 			}
@@ -195,7 +165,7 @@ func (c *SSM) ListCommandInvocations(input *ssm.ListCommandInvocationsInput) (Re
 
 			res := Response{
 				InstanceId: *ci.InstanceId,
-				Status:     *ci.Status,
+				Status:     string(ci.Status),
 				Output:     spl,
 			}
 			resp = append(resp, res)
@@ -213,78 +183,19 @@ func (c *SSM) ListCommandInvocations(input *ssm.ListCommandInvocationsInput) (Re
 	return resp, nil
 }
 
-// ListCommands return CmdLogs
-// input ssm.ListCommandsInput
-func (c *SSM) ListCommands(input *ssm.ListCommandsInput) (CmdLogs, error) {
-	list := CmdLogs{}
-	output := func(page *ssm.ListCommandsOutput, lastpage bool) bool {
-		for _, i := range page.Commands {
-			var (
-				cmds    []string
-				cmd     string = "None"
-				targets []string
-				target  string = "None"
-			)
-
-			if i.Parameters["commands"] != nil {
-				for _, c := range i.Parameters["commands"] {
-					cmds = append(cmds, *c)
-				}
-				cmd = strings.Join(cmds[:], " ")
-			}
-
-			if i.Targets != nil {
-				for _, i := range i.Targets {
-					for _, v := range i.Values {
-						targets = []string{
-							*i.Key,
-							*v,
-						}
-					}
-				}
-				target = strings.Join(targets[:], ", ")
-			}
-
-			if i.InstanceIds != nil {
-				for _, i := range i.InstanceIds {
-					targets = append(targets, *i)
-				}
-				target = strings.Join(targets[:], ",")
-			}
-
-			list = append(list, CmdLog{
-				DocumentName:      *i.DocumentName,
-				Commands:          cmd,
-				Targets:           target,
-				Status:            *i.Status,
-				RequestedDateTime: i.RequestedDateTime.String(),
-			})
-		}
-		return true
-	}
-
-	if err := c.Client.ListCommandsPages(input, output); err != nil {
-		return nil, fmt.Errorf("list commands: %v", err)
-	}
-
-	if len(list) == 0 {
-		return nil, fmt.Errorf("no command logs")
-	}
-
-	return list, nil
-}
-
 // DescribeParameters return []*ssm.Parameters
 // input ssm.DescribeParametersInput
-func (c *SSM) DescribeParameters(input *ssm.DescribeParametersInput) ([]*ssm.ParameterMetadata, error) {
-	var params []*ssm.ParameterMetadata
-	output := func(page *ssm.DescribeParametersOutput, lastPage bool) bool {
-		params = append(params, page.Parameters...)
-		return true
-	}
+func (c *SSM) DescribeParameters(input *ssm.DescribeParametersInput) ([]types.ParameterMetadata, error) {
+	var params []types.ParameterMetadata
+	paginator := ssm.NewDescribeParametersPaginator(c.Client, input)
 
-	if err := c.Client.DescribeParametersPages(input, output); err != nil {
-		return nil, fmt.Errorf("describe paramaters: %v", err)
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("describe paramaters: %v", err)
+		}
+
+		params = append(params, page.Parameters...)
 	}
 
 	if len(params) == 0 {
@@ -296,14 +207,14 @@ func (c *SSM) DescribeParameters(input *ssm.DescribeParametersInput) ([]*ssm.Par
 
 // GetParameter return Parameters
 // input []*ssm.ParameterMetadata
-func (c *SSM) GetParameter(params []*ssm.ParameterMetadata) (Parameters, error) {
+func (c *SSM) GetParameter(params []types.ParameterMetadata) (Parameters, error) {
 	list := Parameters{}
 	for _, p := range params {
 		input := &ssm.GetParameterInput{
 			Name: aws.String(*p.Name),
 		}
 
-		output, err := c.Client.GetParameter(input)
+		output, err := c.Client.GetParameter(context.TODO(), input)
 		if err != nil {
 			return nil, fmt.Errorf("get parameter: %v", err)
 		}

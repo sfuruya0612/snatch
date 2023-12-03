@@ -54,7 +54,7 @@ func (c *RDS) DescribeDBInstances(input *rds.DescribeDBInstancesInput) ([]DBInst
 			DBInstanceClass:  *i.DBInstanceClass,
 			Engine:           *i.Engine,
 			EngineVersion:    *i.EngineVersion,
-			Storage:          strconv.Itoa(int(i.AllocatedStorage)) + "GB",
+			Storage:          strconv.Itoa(int(*i.AllocatedStorage)) + "GB",
 			StorageType:      *i.StorageType,
 			DBInstanceStatus: *i.DBInstanceStatus,
 		})
