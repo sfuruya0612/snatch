@@ -1,24 +1,25 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 )
 
 // IAM client struct
 type IAM struct {
-	Client *iam.IAM
+	Client *iam.Client
 }
 
 // NewIamSess return IAM struct initialized
-func NewIamSess(profile, region string) *IAM {
+func NewIamClient(profile, region string) *IAM {
 	return &IAM{
-		Client: iam.New(GetSession(profile, region)),
+		Client: iam.NewFromConfig(GetSessionV2(profile, region)),
 	}
 }
 
@@ -49,76 +50,72 @@ type Roles []Role
 // ListUsers return Users
 // input iam.ListUsersInput
 func (c *IAM) ListUsers(input *iam.ListUsersInput) (Users, error) {
-	list := Users{}
-	output := func(page *iam.ListUsersOutput, lastpage bool) bool {
-		for _, o := range page.Users {
-			used := "None"
-			if o.PasswordLastUsed != nil {
-				used = o.PasswordLastUsed.String()
-			}
-
-			username := *o.UserName
-
-			mi := &iam.ListAttachedUserPoliciesInput{
-				UserName: aws.String(username),
-			}
-
-			managed, err := c.ListAttachedUserPolicies(mi)
-			if err != nil {
-				return false
-			}
-
-			ii := &iam.ListUserPoliciesInput{
-				UserName: aws.String(username),
-			}
-
-			inline, err := c.ListUserPolicies(ii)
-			if err != nil {
-				return false
-			}
-
-			gi := &iam.ListGroupsForUserInput{
-				UserName: aws.String(username),
-			}
-
-			group, err := c.ListGroupsForUser(gi)
-			if err != nil {
-				return false
-			}
-
-			ai := &iam.ListAccessKeysInput{
-				UserName: aws.String(username),
-			}
-
-			key, err := c.ListAccessKeys(ai)
-			if err != nil {
-				return false
-			}
-
-			list = append(list, User{
-				Name:          username,
-				ManagedPolicy: managed,
-				InlinePolicy:  inline,
-				Group:         group,
-				AccessKey:     key,
-				PWLastUsed:    used,
-				CreateDate:    o.CreateDate.String(),
-			})
-		}
-		return true
+	output, err := c.Client.ListUsers(context.TODO(), input)
+	if err != nil {
+		return nil, fmt.Errorf("list users: %v", err)
 	}
 
-	if err := c.Client.ListUsersPages(input, output); err != nil {
-		return nil, fmt.Errorf("list users: %v", err)
+	list := Users{}
+	for _, o := range output.Users {
+		used := "None"
+		if o.PasswordLastUsed != nil {
+			used = o.PasswordLastUsed.String()
+		}
+
+		username := *o.UserName
+
+		mi := &iam.ListAttachedUserPoliciesInput{
+			UserName: aws.String(username),
+		}
+
+		managed, err := c.listAttachedUserPolicies(mi)
+		if err != nil {
+			return nil, fmt.Errorf("list attached user policies: %v", err)
+		}
+
+		ii := &iam.ListUserPoliciesInput{
+			UserName: aws.String(username),
+		}
+
+		inline, err := c.listUserPolicies(ii)
+		if err != nil {
+			return nil, fmt.Errorf("list user policies: %v", err)
+		}
+
+		gi := &iam.ListGroupsForUserInput{
+			UserName: aws.String(username),
+		}
+
+		group, err := c.listGroupsForUser(gi)
+		if err != nil {
+			return nil, fmt.Errorf("list groups for user: %v", err)
+		}
+
+		ai := &iam.ListAccessKeysInput{
+			UserName: aws.String(username),
+		}
+
+		key, err := c.listAccessKeys(ai)
+		if err != nil {
+			return nil, fmt.Errorf("list access keys: %v", err)
+		}
+
+		list = append(list, User{
+			Name:          username,
+			ManagedPolicy: managed,
+			InlinePolicy:  inline,
+			Group:         group,
+			AccessKey:     key,
+			PWLastUsed:    used,
+			CreateDate:    o.CreateDate.String(),
+		})
 	}
 
 	return list, nil
 }
 
-// ListAttachedUserPolicies return string(managed policy names)
-// input iam.ListAttachedUserPoliciesInput
-func (c *IAM) ListAttachedUserPolicies(input *iam.ListAttachedUserPoliciesInput) (string, error) {
-	output, err := c.Client.ListAttachedUserPolicies(input)
+func (c *IAM) listAttachedUserPolicies(input *iam.ListAttachedUserPoliciesInput) (string, error) {
+	output, err := c.Client.ListAttachedUserPolicies(context.TODO(), input)
 	if err != nil {
 		return "", fmt.Errorf("list attached user policies: %v", err)
 	}
@@ -139,10 +136,8 @@ func (c *IAM) ListAttachedUserPolicies(input *iam.ListAttachedUserPoliciesInput)
 	return policy, nil
 }
 
-// ListUserPolicies return string(inline policy names)
-// input iam.ListAttachedUserPoliciesInput
-func (c *IAM) ListUserPolicies(input *iam.ListUserPoliciesInput) (string, error) {
-	output, err := c.Client.ListUserPolicies(input)
+func (c *IAM) listUserPolicies(input *iam.ListUserPoliciesInput) (string, error) {
+	output, err := c.Client.ListUserPolicies(context.TODO(), input)
 	if err != nil {
 		return "", fmt.Errorf("list user policies: %v", err)
 	}
@@ -151,9 +146,8 @@ func (c *IAM) ListUserPolicies(input *iam.ListUserPoliciesInput) (string, error)
 		policies []string
 		policy   string
 	)
-	for _, p := range output.PolicyNames {
-		policies = append(policies, *p)
-	}
+
+	policies = append(policies, output.PolicyNames...)
 	policy = strings.Join(policies[:], ",")
 
 	if len(policy) == 0 {
@@ -163,10 +157,8 @@ func (c *IAM) ListUserPolicies(input *iam.ListUserPoliciesInput) (string, error)
 	return policy, nil
 }
 
-// ListGroupsForUser return string(group names)
-// input iam.ListGroupsForUserInput
-func (c *IAM) ListGroupsForUser(input *iam.ListGroupsForUserInput) (string, error) {
-	output, err := c.Client.ListGroupsForUser(input)
+func (c *IAM) listGroupsForUser(input *iam.ListGroupsForUserInput) (string, error) {
+	output, err := c.Client.ListGroupsForUser(context.TODO(), input)
 	if err != nil {
 		return "", fmt.Errorf("list groups for user: %v", err)
 	}
@@ -187,10 +179,8 @@ func (c *IAM) ListGroupsForUser(input *iam.ListGroupsForUserInput) (string, erro
 	return group, nil
 }
 
-// ListAccessKeys return string(access keys)
-// input iam.ListAccessKeysInput
-func (c *IAM) ListAccessKeys(input *iam.ListAccessKeysInput) (string, error) {
-	output, err := c.Client.ListAccessKeys(input)
+func (c *IAM) listAccessKeys(input *iam.ListAccessKeysInput) (string, error) {
+	output, err := c.Client.ListAccessKeys(context.TODO(), input)
 	if err != nil {
 		return "", fmt.Errorf("list access keys: %v", err)
 	}
@@ -214,7 +204,7 @@ func (c *IAM) ListAccessKeys(input *iam.ListAccessKeysInput) (string, error) {
 // ListRoles return []string (iam.ListRolesOutput.RoleName)
 // input iam.ListRolesInput
 func (c *IAM) ListRoles(input *iam.ListRolesInput) ([]string, error) {
-	output, err := c.Client.ListRoles(input)
+	output, err := c.Client.ListRoles(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("list roles: %v", err)
 	}
@@ -236,7 +226,7 @@ func (c *IAM) GetRole(names []string) (Roles, error) {
 			RoleName: aws.String(n),
 		}
 
-		output, err := c.Client.GetRole(input)
+		output, err := c.Client.GetRole(context.TODO(), input)
 		if err != nil {
 			return nil, fmt.Errorf("get role: %v", err)
 		}

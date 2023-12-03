@@ -18,6 +18,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/elasticache v1.29.3
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.16.5
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.21.4
+	github.com/aws/aws-sdk-go-v2/service/iam v1.28.2
 	github.com/aws/aws-sdk-go-v2/service/rds v1.54.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.2
 	github.com/charmbracelet/lipgloss v0.8.0

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 
 	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/urfave/cli/v2"
@@ -28,7 +28,7 @@ var Iam = &cli.Command{
 }
 
 func getUserList(profile, region string) error {
-	client := saws.NewIamSess(profile, region)
+	client := saws.NewIamClient(profile, region)
 
 	output, err := client.ListUsers(&iam.ListUsersInput{})
 	if err != nil {
@@ -43,7 +43,7 @@ func getUserList(profile, region string) error {
 }
 
 func getRoleList(profile, region string) error {
-	client := saws.NewIamSess(profile, region)
+	client := saws.NewIamClient(profile, region)
 
 	names, err := client.ListRoles(&iam.ListRolesInput{})
 	if err != nil {
