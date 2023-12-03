@@ -4,16 +4,23 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
+
 	saws "github.com/sfuruya0612/snatch/internal/aws"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func GetRecordsList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var Route53 = &cli.Command{
+	Name:  "route53",
+	Usage: "Get a list of Rotue53 Record resources",
+	Action: func(c *cli.Context) error {
+		return getRecordsList(c.String("profile"), c.String("region"))
+	},
+}
 
-	client := saws.NewRoute53Sess(profile, region)
+func getRecordsList(profile, region string) error {
+	client := saws.NewRoute53Client(profile, region)
+
 	resources, err := client.ListHostedZones(&route53.ListHostedZonesInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)

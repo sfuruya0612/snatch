@@ -6,11 +6,8 @@
 # Uptime
 uptime
 
-# nginx install
-sudo apt install -y nginx > /dev/null
-
 # nginx status
-sudo systemctl status nginx
+systemctl status nginx
 
 # Check 80 port listen
 lsof -i:80

@@ -7,25 +7,69 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	ssmTypes "github.com/aws/aws-sdk-go-v2/service/ssm/types"
+
 	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func StartSession(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var Ssm = &cli.Command{
+	Name:  "ssm",
+	Usage: "Start a session on your instances by launching shell terminal",
+	Action: func(c *cli.Context) error {
+		return startSession(c.String("profile"), c.String("region"))
+	},
+	Subcommands: []*cli.Command{
+		{
+			Name:      "command",
+			Aliases:   []string{"cmd"},
+			Usage:     "Runs shell script to target instances",
+			ArgsUsage: "[ --tag | -t ] <Key:Value> [ --id | -i ] <InstanceId> [ --file | -f ] <ScriptFile>",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "tag",
+					Aliases: []string{"t"},
+					Usage:   "Set Key-Value of the tag (e.g. -t Name:test-ec2)",
+				},
+				&cli.StringFlag{
+					Name:    "id",
+					Aliases: []string{"i"},
+					Usage:   "Set EC2 instance id",
+				},
+				&cli.StringFlag{
+					Name:    "file",
+					Aliases: []string{"f"},
+					Usage:   "Set execute file",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return sendCommand(c.String("profile"), c.String("region"), c.String("tag"), c.String("id"), c.String("file"), c.Args())
+			},
+		},
+		{
+			Name:    "parameter",
+			Aliases: []string{"param"},
+			Usage:   "Get parameter store",
+			Action: func(c *cli.Context) error {
+				return getParameter(c.String("profile"), c.String("region"))
+			},
+		},
+	},
+}
 
-	ssmclient := saws.NewSsmSess(profile, region)
+func startSession(profile, region string) error {
+	ssmclient := saws.NewSsmClient(profile, region)
 
 	input := &ssm.DescribeInstanceInformationInput{
-		Filters: []*ssm.InstanceInformationStringFilter{
+		Filters: []ssmTypes.InstanceInformationStringFilter{
 			{
 				Key:    aws.String("PingStatus"),
-				Values: []*string{aws.String("Online")},
+				Values: []string{"Online"},
 			},
 		},
 	}
@@ -35,10 +79,18 @@ func StartSession(c *cli.Context) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	ec2client := saws.NewEc2Sess(profile, region)
+	ec2client := saws.NewEc2Client(profile, region)
 
 	ec2input := &ec2.DescribeInstancesInput{
-		InstanceIds: aws.StringSlice(ids),
+		InstanceIds: ids,
+		Filters: []ec2Types.Filter{
+			{
+				Name: aws.String("instance-state-name"),
+				Values: []string{
+					"running",
+				},
+			},
+		},
 	}
 
 	// ssm.DescribeInstanceInformation では NameTag が取得できない
@@ -64,7 +116,7 @@ func StartSession(c *cli.Context) error {
 		Target: aws.String(s[1]),
 	}
 
-	sess, endpoint, err := ssmclient.CreateStartSession(si)
+	sess, err := ssmclient.StartSession(si)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
@@ -88,9 +140,9 @@ func StartSession(c *cli.Context) error {
 		SessionId: aws.String(*sess.SessionId),
 	}
 
-	if err = util.ExecCommand(plug, string(sessJson), region, "StartSession", profile, string(paramsJson), endpoint); err != nil {
+	if err = util.ExecCommand(plug, string(sessJson), region, "StartSession", profile, string(paramsJson), fmt.Sprintf("https://ssm.%s.amazonaws.com", region)); err != nil {
 		fmt.Println(err)
-		if err := ssmclient.DeleteStartSession(ti); err != nil {
+		if err := ssmclient.DeleteSession(ti); err != nil {
 			return fmt.Errorf("%v", err)
 		}
 	}
@@ -98,57 +150,21 @@ func StartSession(c *cli.Context) error {
 	return nil
 }
 
-func GetSsmHist(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-	flag := c.Bool("active")
-
-	state := "History"
-	if flag {
-		state = "Active"
-	}
-
-	input := &ssm.DescribeSessionsInput{
-		State: aws.String(state),
-	}
-
-	client := saws.NewSsmSess(profile, region)
-
-	hist, err := client.DescribeSessions(input)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	if err := saws.PrintSessHist(os.Stdout, hist); err != nil {
-		return fmt.Errorf("failed to print resources")
-	}
-
-	return nil
-}
-
-func SendCommand(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	args := c.Args()
-	file := c.String("file")
-	if len(args) == 0 && len(file) == 0 {
+func sendCommand(profile, region, tag, id, file string, args cli.Args) error {
+	if args.Len() == 0 && len(file) == 0 {
 		return fmt.Errorf("args or file is required")
 	}
 
-	id := c.String("id")
-	tag := c.String("tag")
 	if len(id) == 0 && len(tag) == 0 {
 		return fmt.Errorf("instance id or tag is required")
 	}
 
-	param := make(map[string][]*string)
+	param := make(map[string][]string)
 
-	if len(args) > 0 {
-		command := []*string{
-			aws.String(args[0]),
+	if args.Len() > 0 {
+		param["commands"] = []string{
+			args.Get(0),
 		}
-		param["commands"] = command
 	}
 
 	if len(file) > 0 {
@@ -158,10 +174,10 @@ func SendCommand(c *cli.Context) error {
 		}
 		// defer f.Close()
 
-		command := []*string{}
+		command := []string{}
 		s := bufio.NewScanner(f)
 		for s.Scan() {
-			command = append(command, aws.String(s.Text()))
+			command = append(command, s.Text())
 		}
 		param["commands"] = command
 	}
@@ -170,12 +186,12 @@ func SendCommand(c *cli.Context) error {
 		DocumentName:   aws.String("AWS-RunShellScript"),
 		MaxConcurrency: aws.String("25%"),
 		MaxErrors:      aws.String("0"),
-		TimeoutSeconds: aws.Int64(60),
+		TimeoutSeconds: aws.Int32(60),
 		Parameters:     param,
 	}
 
 	if len(id) > 0 {
-		ci.InstanceIds = []*string{aws.String(id)}
+		ci.InstanceIds = []string{id}
 	}
 
 	if len(tag) > 0 {
@@ -183,15 +199,15 @@ func SendCommand(c *cli.Context) error {
 		if len(spl) != 2 {
 			return fmt.Errorf("parse tag=%s", tag)
 		}
-		ci.Targets = []*ssm.Target{
+		ci.Targets = []ssmTypes.Target{
 			{
 				Key:    aws.String("tag:" + spl[0]),
-				Values: []*string{aws.String(spl[1])},
+				Values: []string{spl[1]},
 			},
 		}
 	}
 
-	client := saws.NewSsmSess(profile, region)
+	client := saws.NewSsmClient(profile, region)
 
 	comm, err := client.SendCommand(ci)
 	if err != nil {
@@ -200,7 +216,7 @@ func SendCommand(c *cli.Context) error {
 
 	ii := &ssm.ListCommandInvocationsInput{
 		CommandId: comm.Command.CommandId,
-		Details:   aws.Bool(true),
+		Details:   true,
 	}
 
 	invo, err := client.ListCommandInvocations(ii)
@@ -224,33 +240,8 @@ func SendCommand(c *cli.Context) error {
 	return nil
 }
 
-func GetCmdLog(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	client := saws.NewSsmSess(profile, region)
-
-	input := &ssm.ListCommandsInput{
-		MaxResults: aws.Int64(30),
-	}
-
-	logs, err := client.ListCommands(input)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	if err := saws.PrintCmdLogs(os.Stdout, logs); err != nil {
-		return fmt.Errorf("failed to print command logs")
-	}
-
-	return nil
-}
-
-func GetParameter(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	client := saws.NewSsmSess(profile, region)
+func getParameter(profile, region string) error {
+	client := saws.NewSsmClient(profile, region)
 
 	params, err := client.DescribeParameters(&ssm.DescribeParametersInput{})
 	if err != nil {

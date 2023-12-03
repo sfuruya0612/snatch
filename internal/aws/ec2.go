@@ -1,28 +1,29 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sort"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
-// EC2 client struct
+// EC2 structure is ec2 client.
 type EC2 struct {
-	Client *ec2.EC2
+	Client *ec2.Client
 }
 
-// NewEc2Sess return EC2 struct initialized
-func NewEc2Sess(profile, region string) *EC2 {
+// NewEc2Client returns EC2 struct initialized.
+func NewEc2Client(profile, region string) *EC2 {
 	return &EC2{
-		Client: ec2.New(GetSession(profile, region)),
+		Client: ec2.NewFromConfig(GetSessionV2(profile, region)),
 	}
 }
 
-// Instance ec2 instance struct
+// Instance structure is ec2 instance information.
 type Instance struct {
 	Name             string
 	InstanceId       string
@@ -35,18 +36,19 @@ type Instance struct {
 	LaunchTime       string
 }
 
-// Instances Instance struct slice
-type Instances []Instance
-
-// DescribeInstances return Instances
-// input ec2.DescribeInstancesInput
-func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, error) {
-	output, err := c.Client.DescribeInstances(input)
+// DescribeInstances returns slice Instance structure.
+func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) ([]Instance, error) {
+	ctx := context.TODO()
+	output, err := c.Client.DescribeInstances(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("describe instances: %v", err)
 	}
 
-	list := Instances{}
+	if len(output.Reservations) == 0 {
+		return nil, fmt.Errorf("no resources")
+	}
+
+	list := []Instance{}
 	for _, r := range output.Reservations {
 		for _, i := range r.Instances {
 			name := ""
@@ -78,18 +80,15 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, e
 			list = append(list, Instance{
 				Name:             name,
 				InstanceId:       *i.InstanceId,
-				InstanceType:     *i.InstanceType,
+				InstanceType:     string(i.InstanceType),
 				PrivateIpAddress: priip,
 				PublicIpAddress:  pubip,
-				State:            *i.State.Name,
+				State:            string(i.State.Name),
 				KeyName:          key,
 				AvailabilityZone: az,
 				LaunchTime:       i.LaunchTime.String(),
 			})
 		}
-	}
-	if len(list) == 0 {
-		return nil, fmt.Errorf("no resources")
 	}
 
 	sort.Slice(list, func(i, j int) bool {
@@ -99,29 +98,7 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) (Instances, e
 	return list, nil
 }
 
-// GetConsoleOutput return ec2.GetConsoleOutputOutput
-// input ec2.GetConsoleOutputInput
-func (c *EC2) GetConsoleOutput(input *ec2.GetConsoleOutputInput) (*ec2.GetConsoleOutputOutput, error) {
-	output, err := c.Client.GetConsoleOutput(input)
-	if err != nil {
-		return nil, fmt.Errorf("get console output: %v", err)
-	}
-
-	return output, nil
-}
-
-// TerminateInstances return ec2.TerminateInstancesOutput
-// input ec2.TerminateInstancesInput
-func (c *EC2) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error) {
-	output, err := c.Client.TerminateInstances(input)
-	if err != nil {
-		return nil, fmt.Errorf("terminate instances: %v", err)
-	}
-
-	return output, nil
-}
-
-func PrintInstances(wrt io.Writer, resources Instances) error {
+func PrintInstances(wrt io.Writer, resources []Instance) error {
 	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
 	header := []string{
 		"Name",
@@ -136,17 +113,17 @@ func PrintInstances(wrt io.Writer, resources Instances) error {
 	}
 
 	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("header join: %v", err)
 	}
 
 	for _, r := range resources {
 		if _, err := fmt.Fprintln(w, r.Ec2TabString()); err != nil {
-			return fmt.Errorf("%v", err)
+			return fmt.Errorf("resources join: %v", err)
 		}
 	}
 
 	if err := w.Flush(); err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("flush: %v", err)
 	}
 
 	return nil

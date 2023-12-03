@@ -4,40 +4,48 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/service/elasticache"
 
 	saws "github.com/sfuruya0612/snatch/internal/aws"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func GetEcClusterList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	client := saws.NewElastiCacheSess(profile, region)
-	resources, err := client.DescribeCacheClusters(&elasticache.DescribeCacheClustersInput{})
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	if err := saws.PrintCacheClusters(os.Stdout, resources); err != nil {
-		return fmt.Errorf("failed to print resources")
-	}
-
-	return nil
+var ElastiCache = &cli.Command{
+	Name:    "elasticache",
+	Aliases: []string{"ec"},
+	Usage:   "Get a list of ElastiCache",
+	Action: func(c *cli.Context) error {
+		return getEcNodeList(c.String("profile"), c.String("region"))
+	},
 }
 
-func GetEcGroupsList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+func getEcNodeList(profile, region string) error {
+	c := saws.NewElastiCacheClient(profile, region)
 
-	client := saws.NewElastiCacheSess(profile, region)
-	resources, err := client.DescribeReplicationGroups(&elasticache.DescribeReplicationGroupsInput{})
+	clusters, err := c.DescribeCacheClusters(&elasticache.DescribeCacheClustersInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
-	if err := saws.PrintRepricationGroups(os.Stdout, resources); err != nil {
+	// TODO: Get the information of the replication group together. Control the loop of ReplicationGroupId.
+	// nodes := []saws.CacheNode{}
+	// for _, n := range clusters {
+	// 	input := &elasticache.DescribeReplicationGroupsInput{
+	// 		ReplicationGroupId: &n.ReplicationGroupId,
+	// 	}
+
+	// 	group, err := c.DescribeReplicationGroups(input, n)
+	// 	if err != nil {
+	// 		return fmt.Errorf("%v", err)
+	// 	}
+	// 	nodes = append(nodes, group)
+	// }
+
+	// sort.Slice(nodes, func(i, j int) bool {
+	// 	return nodes[i].ReplicationGroupId < nodes[j].ReplicationGroupId
+	// })
+
+	if err := saws.PrintNodes(os.Stdout, clusters); err != nil {
 		return fmt.Errorf("failed to print resources")
 	}
 

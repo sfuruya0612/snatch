@@ -1,26 +1,74 @@
 package cmd
 
 import (
-	"bytes"
-	"compress/gzip"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+
 	saws "github.com/sfuruya0612/snatch/internal/aws"
 	"github.com/sfuruya0612/snatch/internal/util"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func GetBucketList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var S3 = &cli.Command{
+	Name:  "s3",
+	Usage: "Get a list of S3 Buckets",
+	Action: func(c *cli.Context) error {
+		return getBucketList(c.String("profile"), c.String("region"))
+	},
+	Subcommands: []*cli.Command{
+		{
+			Name:      "object",
+			Usage:     "Get S3 object list",
+			ArgsUsage: "[ --bucket | -b ] <BucketName>",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "bucket",
+					Aliases: []string{"b"},
+					Usage:   "Set bucket name",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return getObjectList(c.String("profile"), c.String("region"), c.String("bucket"))
+			},
+		},
+		{
+			Name:      "cat",
+			Usage:     "Desplay S3 object file",
+			ArgsUsage: "[ --bucket | -b ] <BucketName> [ --key | -k ] <ObjectKey>",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "bucket",
+					Aliases:  []string{"b"},
+					Usage:    "Set bucket name",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "key",
+					Aliases:  []string{"k"},
+					Usage:    "Set object key",
+					Required: true,
+				},
+				&cli.BoolFlag{
+					Name:    "download",
+					Aliases: []string{"d"},
+					Usage:   "Download object file",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				return catObject(c.String("profile"), c.String("region"), c.String("bucket"), c.String("key"), c.Bool("download"))
+			},
+		},
+	},
+}
 
-	client := saws.NewS3Sess(profile, region)
+func getBucketList(profile, region string) error {
+	client := saws.NewS3Client(profile, region)
+
 	buckets, err := client.ListBuckets(&s3.ListBucketsInput{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -33,13 +81,8 @@ func GetBucketList(c *cli.Context) error {
 	return nil
 }
 
-func GetObjectList(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	bucket := c.String("bucket")
-
-	client := saws.NewS3Sess(profile, region)
+func getObjectList(profile, region, bucket string) error {
+	client := saws.NewS3Client(profile, region)
 
 	if len(bucket) == 0 {
 		buckets, err := client.ListBuckets(&s3.ListBucketsInput{})
@@ -69,84 +112,41 @@ func GetObjectList(c *cli.Context) error {
 	return nil
 }
 
-func CatObject(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	bucket := c.String("bucket")
-	key := c.String("key")
-
-	if len(bucket) == 0 || len(key) == 0 {
-		return fmt.Errorf("--bucket and --key is required")
-	}
-
+func catObject(profile, region, bucket, key string, download bool) error {
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}
 
-	client := saws.NewS3Sess(profile, region)
+	client := saws.NewS3Client(profile, region)
 	body, err := client.GetObject(input)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
-	var buf bytes.Buffer
-	if _, rerr := buf.ReadFrom(body); rerr != nil {
-		return fmt.Errorf("read body from s3://%s/%s: %v", bucket, key, err)
+	b, err := io.ReadAll(body)
+	if err != nil {
+		return fmt.Errorf("read file s3://%s/%s: %v", bucket, key, err)
 	}
 
-	if !strings.HasSuffix(key, ".gz") {
-		fmt.Println(buf.String())
+	if download {
+		f, err := os.Create(filepath.Base(key))
+		if err != nil {
+			return fmt.Errorf("failed to create file: %v", err)
+		}
+		defer f.Close()
+
+		_, err = f.Write(b)
+		if err != nil {
+			return fmt.Errorf("failed to write file: %v", err)
+		}
+
+		fmt.Printf("Downloaded s3://%s/%s\n", bucket, key)
+
 		return nil
 	}
 
-	reader, err := gzip.NewReader(&buf)
-	if err != nil {
-		return fmt.Errorf("new gzip reader: %v", err)
-	}
+	fmt.Println(string(b))
 
-	bytea, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return fmt.Errorf("read gzip s3://%s/%s: %v", bucket, key, err)
-	}
-
-	if err := reader.Close(); err != nil {
-		return fmt.Errorf("close reader s3://%s/%s: %v", bucket, key, err)
-	}
-
-	fmt.Println(string(bytea))
-
-	return nil
-}
-
-func DownloadObject(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
-
-	bucket := c.String("bucket")
-	key := c.String("key")
-
-	if len(bucket) == 0 || len(key) == 0 {
-		return fmt.Errorf("--bucket and --key is required")
-	}
-
-	f, err := os.Create(filepath.Base(key))
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	input := &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	}
-
-	client := saws.NewS3DownloaderSess(profile, region)
-	bytea, err := client.Download(f, input)
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	fmt.Printf("\nDownloadedSize: %d byte", bytea)
 	return nil
 }

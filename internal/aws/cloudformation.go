@@ -1,23 +1,24 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 )
 
 // CloudFormation client struct
 type CloudFormation struct {
-	Client *cloudformation.CloudFormation
+	Client *cloudformation.Client
 }
 
 // NewCfnSess return CloudFormation struct initialized
-func NewCfnSess(profile, region string) *CloudFormation {
+func NewCfnClient(profile, region string) *CloudFormation {
 	return &CloudFormation{
-		Client: cloudformation.New(GetSession(profile, region)),
+		Client: cloudformation.NewFromConfig(GetSessionV2(profile, region)),
 	}
 }
 
@@ -46,7 +47,7 @@ type Events []Event
 // DescribeStacks return Stacks
 // input cloudformation.DescribeStacksInput
 func (c *CloudFormation) DescribeStacks(input *cloudformation.DescribeStacksInput) (Stacks, error) {
-	output, err := c.Client.DescribeStacks(input)
+	output, err := c.Client.DescribeStacks(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("describe stacks: %v", err)
 	}
@@ -60,7 +61,7 @@ func (c *CloudFormation) DescribeStacks(input *cloudformation.DescribeStacksInpu
 
 		list = append(list, Stack{
 			Name:       *l.StackName,
-			Status:     *l.StackStatus,
+			Status:     string(l.StackStatus),
 			CreateDate: l.CreationTime.String(),
 			UpdateDate: update,
 		})
@@ -75,7 +76,7 @@ func (c *CloudFormation) DescribeStacks(input *cloudformation.DescribeStacksInpu
 // DescribeStackEvents return Events
 // input cloudformation.DescribeStackEventsInput
 func (c *CloudFormation) DescribeStackEvents(input *cloudformation.DescribeStackEventsInput) (Events, error) {
-	output, err := c.Client.DescribeStackEvents(input)
+	output, err := c.Client.DescribeStackEvents(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("describe stack events: %v", err)
 	}
@@ -91,22 +92,12 @@ func (c *CloudFormation) DescribeStackEvents(input *cloudformation.DescribeStack
 		list = append(list, Event{
 			Timestamp:            l.Timestamp.String(),
 			LogicalResourceId:    *l.LogicalResourceId,
-			ResourceStatus:       *l.ResourceStatus,
+			ResourceStatus:       string(l.ResourceStatus),
 			ResourceStatusReason: reason,
 		})
 	}
 
 	return list, nil
-}
-
-// DeleteStack return none
-// input cloudformation.DeleteStackInput
-func (c *CloudFormation) DeleteStack(input *cloudformation.DeleteStackInput) error {
-	if _, err := c.Client.DeleteStack(input); err != nil {
-		return fmt.Errorf("delete stack: %v", err)
-	}
-
-	return nil
 }
 
 func PrintStacks(wrt io.Writer, resources Stacks) error {

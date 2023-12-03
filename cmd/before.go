@@ -3,14 +3,19 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/urfave/cli/v2"
 )
 
-func Before(c *cli.Context) error {
-	profile := c.GlobalString("profile")
-	region := c.GlobalString("region")
+var style = lipgloss.NewStyle().
+	Bold(true).
+	Foreground(lipgloss.Color("#04B575"))
 
-	fmt.Printf("\x1b[32mAWS_PROFILE: %s , REGION: %s\x1b[0m\n", profile, region)
+func Before(c *cli.Context) error {
+	p := c.String("profile")
+	r := c.String("region")
+
+	fmt.Println(style.Render("Profile: "+p, "Region: "+r))
 
 	return nil
 }

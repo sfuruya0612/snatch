@@ -2,18 +2,28 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
+	"runtime"
 
 	"github.com/sfuruya0612/snatch/cmd"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 var (
-	date      string
-	hash      string
-	goversion string
+	commit string
 )
+
+var Commands = []*cli.Command{
+	cmd.Ec2,
+	cmd.Rds,
+	cmd.ElastiCache,
+	cmd.Elb,
+	cmd.Route53,
+	cmd.S3,
+	cmd.Ssm,
+	cmd.CloudFormation,
+	cmd.Iam,
+}
 
 func main() {
 	app := cli.NewApp()
@@ -21,28 +31,22 @@ func main() {
 	app.EnableBashCompletion = true
 	app.Name = "snatch"
 	app.Usage = "CLI tool to get AWS resources"
-
-	if date != "" || hash != "" || goversion != "" {
-		app.Version = fmt.Sprintf("%s %s (Build by: %s)", date, hash, goversion)
-	} else {
-		v, err := ioutil.ReadFile("VERSION")
-		if err != nil {
-			fmt.Println("doesn’t read the VERSION file")
-		}
-		app.Version = string(v)
-	}
+	app.Version = fmt.Sprintf("%s (Build by: %s)", commit, runtime.Version())
 
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:   "profile, p",
-			EnvVar: "AWS_PROFILE",
-			Value:  "default",
-			Usage:  "AWS credential (~/.aws/config) or read AWS_PROFILE environment variable",
+		&cli.StringFlag{
+			Name:    "profile",
+			Aliases: []string{"p"},
+			EnvVars: []string{"AWS_PROFILE"},
+			Value:   "default",
+			Usage:   "AWS credential (~/.aws/config) or read AWS_PROFILE environment variable",
 		},
-		cli.StringFlag{
-			Name:  "region, r",
-			Value: "ap-northeast-1",
-			Usage: "Specify a valid AWS region",
+		&cli.StringFlag{
+			Name:    "region",
+			Aliases: []string{"r"},
+			EnvVars: []string{"AWS_REGION"},
+			Value:   "ap-northeast-1",
+			Usage:   "Specify a valid AWS region",
 		},
 	}
 
@@ -55,7 +59,7 @@ func main() {
 		if c, ok := err.(cli.ExitCoder); ok {
 			code = c.ExitCode()
 		}
-		fmt.Printf("\n\x1b[31mERROR: %v\x1b[0m", err.Error())
+		fmt.Printf("\x1b[31mERROR: %v\x1b[0m", err.Error())
 		os.Exit(code)
 	}
 }
