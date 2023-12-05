@@ -35,6 +35,14 @@ var Rds = &cli.Command{
 				},
 			},
 		},
+		{
+			Name:    "s3export",
+			Aliases: []string{"e"},
+			Usage:   "Get a list of RDS S3 export",
+			Action: func(c *cli.Context) error {
+				return getRdsS3ExportList(c.String("profile"), c.String("region"))
+			},
+		},
 	},
 }
 
@@ -77,6 +85,21 @@ func getRdsClusterEndpoints(profile, region string) error {
 	}
 
 	if err := saws.PrintDBClusterEndpoints(os.Stdout, endpoints); err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	return nil
+}
+
+func getRdsS3ExportList(profile, region string) error {
+	c := saws.NewRdsClient(profile, region)
+
+	exports, err := c.DescribeExportTasks(&rds.DescribeExportTasksInput{})
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	if err := saws.PrintExportTasks(os.Stdout, exports); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 

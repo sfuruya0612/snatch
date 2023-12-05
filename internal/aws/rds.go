@@ -262,3 +262,93 @@ func (i *DBClusterEndpoint) RdsClusterEndpointTabString() string {
 
 	return strings.Join(fields, "\t")
 }
+
+// ExportTasks structure is rds export tasks information.
+type ExportTasks struct {
+	ExportTaskIdentifier string
+	Source               string
+	Status               string
+	TaskStartTime        string
+	TaskEndTime          string
+}
+
+// DescribeExportTasks returns slice ExportTasks structure.
+func (c *RDS) DescribeExportTasks(input *rds.DescribeExportTasksInput) ([]ExportTasks, error) {
+	list := []ExportTasks{}
+	paginator := rds.NewDescribeExportTasksPaginator(c.Client, input)
+
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("describe export tasks: %v", err)
+		}
+
+		for _, i := range output.ExportTasks {
+			startTime := "None"
+			if i.TaskStartTime != nil {
+				startTime = i.TaskStartTime.String()
+			}
+
+			endTime := "None"
+			if i.TaskEndTime != nil {
+				endTime = i.TaskEndTime.String()
+			}
+
+			split := strings.Split(*i.SourceArn, ":")
+			source := split[len(split)-1]
+
+			list = append(list, ExportTasks{
+				ExportTaskIdentifier: *i.ExportTaskIdentifier,
+				Source:               source,
+				Status:               string(*i.Status),
+				TaskStartTime:        startTime,
+				TaskEndTime:          endTime,
+			})
+		}
+	}
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].TaskStartTime > list[j].TaskStartTime
+	})
+
+	return list, nil
+}
+
+func PrintExportTasks(wrt io.Writer, resources []ExportTasks) error {
+	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
+	header := []string{
+		"ExportTaskIdentifier",
+		"SourceArn",
+		"Status",
+		"TaskStartTime",
+		"TaskEndTime",
+	}
+
+	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
+		return fmt.Errorf("header join: %v", err)
+	}
+
+	for _, r := range resources {
+		if _, err := fmt.Fprintln(w, r.ExportTasksTabString()); err != nil {
+			return fmt.Errorf("resources join: %v", err)
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("flush: %v", err)
+	}
+
+	return nil
+}
+
+func (i *ExportTasks) ExportTasksTabString() string {
+	fields := []string{
+		i.ExportTaskIdentifier,
+		i.Source,
+		i.Status,
+		i.TaskStartTime,
+		i.TaskEndTime,
+	}
+
+	return strings.Join(fields, "\t")
+}
