@@ -28,6 +28,7 @@ type Instance struct {
 	Name             string
 	InstanceId       string
 	InstanceType     string
+	Lifecycle        string
 	PrivateIpAddress string
 	PublicIpAddress  string
 	State            string
@@ -81,6 +82,7 @@ func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) ([]Instance, 
 				Name:             name,
 				InstanceId:       *i.InstanceId,
 				InstanceType:     string(i.InstanceType),
+				Lifecycle:        string(i.InstanceLifecycle),
 				PrivateIpAddress: priip,
 				PublicIpAddress:  pubip,
 				State:            string(i.State.Name),
@@ -104,6 +106,7 @@ func PrintInstances(wrt io.Writer, resources []Instance) error {
 		"Name",
 		"InstanceID",
 		"InstanceType",
+		"Lifecycle",
 		"PrivateIP",
 		"PublicIP",
 		"State",
@@ -134,6 +137,7 @@ func (i *Instance) Ec2TabString() string {
 		i.Name,
 		i.InstanceId,
 		i.InstanceType,
+		i.Lifecycle,
 		i.PrivateIpAddress,
 		i.PublicIpAddress,
 		i.State,
