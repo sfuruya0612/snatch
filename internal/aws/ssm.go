@@ -219,10 +219,15 @@ func (c *SSM) GetParameter(params []types.ParameterMetadata) (Parameters, error)
 			return nil, fmt.Errorf("get parameter: %v", err)
 		}
 
+		description := "None"
+		if p.Description != nil {
+			description = *p.Description
+		}
+
 		list = append(list, Parameter{
 			Name:        *p.Name,
 			Value:       *output.Parameter.Value,
-			Description: *p.Description,
+			Description: description,
 		})
 	}
 
