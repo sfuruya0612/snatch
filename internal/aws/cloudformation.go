@@ -18,7 +18,7 @@ type CloudFormation struct {
 // NewCfnSess return CloudFormation struct initialized
 func NewCfnClient(profile, region string) *CloudFormation {
 	return &CloudFormation{
-		Client: cloudformation.NewFromConfig(GetSessionV2(profile, region)),
+		Client: cloudformation.NewFromConfig(GetSession(profile, region)),
 	}
 }
 

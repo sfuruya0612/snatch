@@ -20,7 +20,7 @@ type ElastiCache struct {
 // NewElastiCacheClient return ElastiCache struct initialized.
 func NewElastiCacheClient(profile, region string) *ElastiCache {
 	return &ElastiCache{
-		Client: elasticache.NewFromConfig(GetSessionV2(profile, region)),
+		Client: elasticache.NewFromConfig(GetSession(profile, region)),
 	}
 }
 

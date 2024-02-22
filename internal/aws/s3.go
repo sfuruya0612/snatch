@@ -20,7 +20,7 @@ type S3 struct {
 // NewS3Sess return S3 struct initialized
 func NewS3Client(profile, region string) *S3 {
 	return &S3{
-		Client: s3.NewFromConfig(GetSessionV2(profile, region)),
+		Client: s3.NewFromConfig(GetSession(profile, region)),
 	}
 }
 

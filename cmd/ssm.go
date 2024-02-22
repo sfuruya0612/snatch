@@ -20,40 +20,11 @@ import (
 
 var Ssm = &cli.Command{
 	Name:  "ssm",
-	Usage: "Start a session on your instances by launching shell terminal",
-	Action: func(c *cli.Context) error {
-		return startSession(c.String("profile"), c.String("region"))
-	},
+	Usage: "Use Systems Manager services",
 	Subcommands: []*cli.Command{
 		{
-			Name:      "command",
-			Aliases:   []string{"cmd"},
-			Usage:     "Runs shell script to target instances",
-			ArgsUsage: "[ --tag | -t ] <Key:Value> [ --id | -i ] <InstanceId> [ --file | -f ] <ScriptFile>",
-			Flags: []cli.Flag{
-				&cli.StringFlag{
-					Name:    "tag",
-					Aliases: []string{"t"},
-					Usage:   "Set Key-Value of the tag (e.g. -t Name:test-ec2)",
-				},
-				&cli.StringFlag{
-					Name:    "id",
-					Aliases: []string{"i"},
-					Usage:   "Set EC2 instance id",
-				},
-				&cli.StringFlag{
-					Name:    "file",
-					Aliases: []string{"f"},
-					Usage:   "Set execute file",
-				},
-			},
-			Action: func(c *cli.Context) error {
-				return sendCommand(c.String("profile"), c.String("region"), c.String("tag"), c.String("id"), c.String("file"), c.Args())
-			},
-		},
-		{
 			Name:    "parameter",
-			Aliases: []string{"param"},
+			Aliases: []string{"p"},
 			Usage:   "Get parameter store",
 			Action: func(c *cli.Context) error {
 				return getParameter(c.String("profile"), c.String("region"))

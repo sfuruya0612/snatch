@@ -20,7 +20,7 @@ type Route53 struct {
 // NewRoute53Sess return Route53 struct initialized
 func NewRoute53Client(profile, region string) *Route53 {
 	return &Route53{
-		Client: route53.NewFromConfig(GetSessionV2(profile, region)),
+		Client: route53.NewFromConfig(GetSession(profile, region)),
 	}
 }
 

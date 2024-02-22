@@ -19,7 +19,7 @@ type IAM struct {
 // NewIamSess return IAM struct initialized
 func NewIamClient(profile, region string) *IAM {
 	return &IAM{
-		Client: iam.NewFromConfig(GetSessionV2(profile, region)),
+		Client: iam.NewFromConfig(GetSession(profile, region)),
 	}
 }
 

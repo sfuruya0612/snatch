@@ -23,6 +23,7 @@ var Commands = []*cli.Command{
 	cmd.Ssm,
 	cmd.CloudFormation,
 	cmd.Iam,
+	cmd.Ecs,
 }
 
 func main() {
