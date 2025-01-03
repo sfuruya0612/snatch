@@ -3,148 +3,132 @@ package aws
 import (
 	"context"
 	"fmt"
-	"io"
-	"sort"
-	"strings"
-	"text/tabwriter"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
-// EC2 structure is ec2 client.
-type EC2 struct {
-	Client *ec2.Client
+type Ec2Opts struct {
+	Tag        string
+	Running    bool
+	Stopped    bool
+	InstanceId string
+	File       string
 }
 
-// NewEc2Client returns EC2 struct initialized.
-func NewEc2Client(profile, region string) *EC2 {
-	return &EC2{
-		Client: ec2.NewFromConfig(GetSession(profile, region)),
+// EC2Instance は選択可能なEC2インスタンスを表す
+type EC2Instance struct {
+	Name       string
+	InstanceID string
+}
+
+// Title は表示名を返す
+func (i EC2Instance) Title() string {
+	return fmt.Sprintf("%s (%s)", i.Name, i.InstanceID)
+}
+
+// ID はインスタンスIDを返す
+func (i EC2Instance) ID() string {
+	return i.InstanceID
+}
+
+type ec2Api interface {
+	DescribeInstances(ctx context.Context, input *ec2.DescribeInstancesInput, opts ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
+}
+
+func NewEC2Client(profile, region string) ec2Api {
+	return ec2.NewFromConfig(GetSession(profile, region))
+}
+
+func getEc2TagValue(tags []types.Tag, key string) string {
+	for _, tag := range tags {
+		if *tag.Key == key {
+			return *tag.Value
+		}
 	}
+	return ""
 }
 
-// Instance structure is ec2 instance information.
-type Instance struct {
-	Name             string
-	InstanceId       string
-	InstanceType     string
-	Lifecycle        string
-	PrivateIpAddress string
-	PublicIpAddress  string
-	State            string
-	KeyName          string
-	AvailabilityZone string
-	LaunchTime       string
+func GenerateDescribeInstancesInput(opts *Ec2Opts) (*ec2.DescribeInstancesInput, error) {
+	i := &ec2.DescribeInstancesInput{}
+
+	// t := opts.Tag
+	// if len(t) > 0 {
+	// 	if !strings.Contains(t, ":") {
+	// 		return nil, fmt.Errorf("tag format is invalid (e.g. Name:MyInstance)")
+	// 	}
+
+	// 	s := strings.Split(t, ":")
+	// 	i.Filters = append(i.Filters, types.Filter{
+	// 		Name:   aws.String("tag:" + s[0]),
+	// 		Values: []string{s[1]},
+	// 	})
+	// }
+
+	if opts.Running {
+		i.Filters = append(i.Filters, types.Filter{
+			Name:   aws.String("instance-state-name"),
+			Values: []string{"running"},
+		})
+	}
+
+	if opts.InstanceId != "" {
+		i.Filters = append(i.Filters, types.Filter{
+			Name:   aws.String("instance-id"),
+			Values: []string{opts.InstanceId},
+		})
+	}
+
+	return i, nil
 }
 
-// DescribeInstances returns slice Instance structure.
-func (c *EC2) DescribeInstances(input *ec2.DescribeInstancesInput) ([]Instance, error) {
-	ctx := context.TODO()
-	output, err := c.Client.DescribeInstances(ctx, input)
+func DescribeInstances(api ec2Api, input *ec2.DescribeInstancesInput) ([][]string, error) {
+	o, err := api.DescribeInstances(context.Background(), input)
 	if err != nil {
-		return nil, fmt.Errorf("describe instances: %v", err)
+		return nil, err
 	}
 
-	if len(output.Reservations) == 0 {
-		return nil, fmt.Errorf("no resources")
-	}
-
-	list := []Instance{}
-	for _, r := range output.Reservations {
+	var instances [][]string
+	for _, r := range o.Reservations {
 		for _, i := range r.Instances {
-			name := ""
-			for _, t := range i.Tags {
-				if *t.Key == "Name" {
-					name = *t.Value
-				}
+			name := getEc2TagValue(i.Tags, "Name")
+
+			lifecycle := "OnDemand"
+			if i.InstanceLifecycle != "" {
+				lifecycle = string(i.InstanceLifecycle)
 			}
 
-			priip := "None"
+			privateIP := "None"
 			if i.PrivateIpAddress != nil {
-				priip = *i.PrivateIpAddress
+				privateIP = *i.PrivateIpAddress
 			}
 
-			pubip := "None"
+			publicIP := "None"
 			if i.PublicIpAddress != nil {
-				pubip = *i.PublicIpAddress
+				publicIP = *i.PublicIpAddress
 			}
 
-			key := "None"
+			keyName := "None"
 			if i.KeyName != nil {
-				key = *i.KeyName
+				keyName = *i.KeyName
 			}
 
-			// AvailabilityZoneは末尾(1a, 1c...)のみ取得する
-			spl := strings.Split(*i.Placement.AvailabilityZone, "-")
-			az := spl[2]
-
-			list = append(list, Instance{
-				Name:             name,
-				InstanceId:       *i.InstanceId,
-				InstanceType:     string(i.InstanceType),
-				Lifecycle:        string(i.InstanceLifecycle),
-				PrivateIpAddress: priip,
-				PublicIpAddress:  pubip,
-				State:            string(i.State.Name),
-				KeyName:          key,
-				AvailabilityZone: az,
-				LaunchTime:       i.LaunchTime.String(),
-			})
+			instance := []string{
+				name,
+				aws.ToString(i.InstanceId),
+				string(i.InstanceType),
+				lifecycle,
+				privateIP,
+				publicIP,
+				string(i.State.Name),
+				keyName,
+				string(*i.Placement.AvailabilityZone),
+				i.LaunchTime.String(),
+			}
+			instances = append(instances, instance)
 		}
 	}
 
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].Name < list[j].Name
-	})
-
-	return list, nil
-}
-
-func PrintInstances(wrt io.Writer, resources []Instance) error {
-	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
-	header := []string{
-		"Name",
-		"InstanceID",
-		"InstanceType",
-		"Lifecycle",
-		"PrivateIP",
-		"PublicIP",
-		"State",
-		"KeyName",
-		"AZ",
-		"LaunchTime",
-	}
-
-	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
-		return fmt.Errorf("header join: %v", err)
-	}
-
-	for _, r := range resources {
-		if _, err := fmt.Fprintln(w, r.Ec2TabString()); err != nil {
-			return fmt.Errorf("resources join: %v", err)
-		}
-	}
-
-	if err := w.Flush(); err != nil {
-		return fmt.Errorf("flush: %v", err)
-	}
-
-	return nil
-}
-
-func (i *Instance) Ec2TabString() string {
-	fields := []string{
-		i.Name,
-		i.InstanceId,
-		i.InstanceType,
-		i.Lifecycle,
-		i.PrivateIpAddress,
-		i.PublicIpAddress,
-		i.State,
-		i.KeyName,
-		i.AvailabilityZone,
-		i.LaunchTime,
-	}
-
-	return strings.Join(fields, "\t")
+	return instances, nil
 }

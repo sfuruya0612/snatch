@@ -2,106 +2,95 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/aws/aws-sdk-go-v2/service/rds"
+	"github.com/spf13/cobra"
 
-	saws "github.com/sfuruya0612/snatch/internal/aws"
-	"github.com/urfave/cli/v2"
+	"github.com/sfuruya0612/snatch/internal/aws"
+	"github.com/sfuruya0612/snatch/internal/util"
 )
 
-var Rds = &cli.Command{
-	Name:  "rds",
-	Usage: "Get a list of RDS instance",
-	Action: func(c *cli.Context) error {
-		return getRdsList(c.String("profile"), c.String("region"))
-	},
-	Subcommands: []*cli.Command{
-		{
-			Name:    "cluster",
-			Aliases: []string{"c"},
-			Usage:   "Get a list of RDS cluster",
-			Action: func(c *cli.Context) error {
-				return getRdsClusterList(c.String("profile"), c.String("region"))
-			},
-			Subcommands: []*cli.Command{
-				{
-					Name:    "endpoint",
-					Aliases: []string{"e"},
-					Usage:   "Get a list of RDS cluster endpoint",
-					Action: func(c *cli.Context) error {
-						return getRdsClusterEndpoints(c.String("profile"), c.String("region"))
-					},
-				},
-			},
-		},
-		{
-			Name:    "s3export",
-			Aliases: []string{"e"},
-			Usage:   "Get a list of RDS S3 export",
-			Action: func(c *cli.Context) error {
-				return getRdsS3ExportList(c.String("profile"), c.String("region"))
-			},
-		},
-	},
+var rdsCmd = &cobra.Command{
+	Use:   "rds",
+	Short: "Manage RDS",
 }
 
-func getRdsList(profile, region string) error {
-	c := saws.NewRdsClient(profile, region)
-
-	instances, err := c.DescribeDBInstances(&rds.DescribeDBInstancesInput{})
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	if err := saws.PrintDBInstances(os.Stdout, instances); err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	return nil
+var rdsInstanceCmd = &cobra.Command{
+	Use:   "ls",
+	Short: "List RDS instances",
+	Run:   listRDSInstances,
 }
 
-func getRdsClusterList(profile, region string) error {
-	c := saws.NewRdsClient(profile, region)
-
-	clusters, err := c.DescribeDBClusters(&rds.DescribeDBClustersInput{})
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	if err := saws.PrintDBClusters(os.Stdout, clusters); err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	return nil
+var rdsClusterCmd = &cobra.Command{
+	Use:     "cluster",
+	Aliases: []string{"c"},
+	Short:   "List RDS clusters",
+	Run:     listRDSClusters,
 }
 
-func getRdsClusterEndpoints(profile, region string) error {
-	c := saws.NewRdsClient(profile, region)
-
-	endpoints, err := c.DescribeDBClusterEndpoints(&rds.DescribeDBClusterEndpointsInput{})
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	if err := saws.PrintDBClusterEndpoints(os.Stdout, endpoints); err != nil {
-		return fmt.Errorf("%v", err)
-	}
-
-	return nil
+var rdsInstanceColumns = []util.Column{
+	{Header: "Name", Width: 40},
+	{Header: "DBInstanceClass", Width: 15},
+	{Header: "Engine", Width: 16},
+	{Header: "EngineVersion", Width: 22},
+	{Header: "Storage", Width: 8},
+	{Header: "StorageType", Width: 10},
+	{Header: "DBInstanceStatus", Width: 15},
 }
 
-func getRdsS3ExportList(profile, region string) error {
-	c := saws.NewRdsClient(profile, region)
+var rdsClusterColumns = []util.Column{
+	{Header: "Name", Width: 65},
+	{Header: "Engine", Width: 16},
+	{Header: "EngineVersion", Width: 22},
+	{Header: "EngineMode", Width: 12},
+	{Header: "Status", Width: 15},
+}
 
-	exports, err := c.DescribeExportTasks(&rds.DescribeExportTasksInput{})
+func listRDSInstances(cmd *cobra.Command, args []string) {
+	client := aws.NewRdsClient(cmd.Flag("profile").Value.String(), cmd.Flag("region").Value.String())
+
+	opts := &aws.RdsOpts{
+		// Tag: tagFilter,
+	}
+
+	input, err := aws.GenerateDescribeDBInstancesInput(opts)
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		fmt.Printf("Unable to generate describe DB instances input: %v\n", err)
+		return
 	}
 
-	if err := saws.PrintExportTasks(os.Stdout, exports); err != nil {
-		return fmt.Errorf("%v", err)
+	instances, err := aws.DescribeDBInstances(client, input)
+	if err != nil {
+		fmt.Printf("Unable to describe DB instances: %v\n", err)
+		return
 	}
 
-	return nil
+	if len(instances) == 0 {
+		fmt.Println("No DB instances found")
+		return
+	}
+
+	formatter := util.NewTableFormatter(rdsInstanceColumns, cmd.Flag("output").Value.String())
+	formatter.PrintHeader()
+	formatter.PrintRows(instances)
+}
+
+func listRDSClusters(cmd *cobra.Command, args []string) {
+	client := aws.NewRdsClient(cmd.Flag("profile").Value.String(), cmd.Flag("region").Value.String())
+
+	input := aws.GenerateDescribeDBClustersInput(&aws.RdsOpts{})
+
+	clusters, err := aws.DescribeDBClusters(client, input)
+	if err != nil {
+		fmt.Printf("Unable to describe DB clusters: %v\n", err)
+		return
+	}
+
+	if len(clusters) == 0 {
+		fmt.Println("No DB clusters found")
+		return
+	}
+
+	formatter := util.NewTableFormatter(rdsClusterColumns, cmd.Flag("output").Value.String())
+	formatter.PrintHeader()
+	formatter.PrintRows(clusters)
 }

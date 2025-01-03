@@ -3,352 +3,86 @@ package aws
 import (
 	"context"
 	"fmt"
-	"io"
-	"sort"
-	"strconv"
-	"strings"
-	"text/tabwriter"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 )
 
-// RDS structure is rds client.
-type RDS struct {
-	Client *rds.Client
+type RdsOpts struct {
 }
 
-// NewRdsClient returns RDS struct initialized.
-func NewRdsClient(profile, region string) *RDS {
-	return &RDS{
-		Client: rds.NewFromConfig(GetSession(profile, region)),
-	}
+type rdsApi interface {
+	DescribeDBInstances(ctx context.Context, params *rds.DescribeDBInstancesInput, optFns ...func(*rds.Options)) (*rds.DescribeDBInstancesOutput, error)
+	DescribeDBClusters(ctx context.Context, prams *rds.DescribeDBClustersInput, optFns ...func(*rds.Options)) (*rds.DescribeDBClustersOutput, error)
 }
 
-// DBInstance structure is rds instance information.
-type DBInstance struct {
-	Name             string
-	DBInstanceClass  string
-	Engine           string
-	EngineVersion    string
-	Storage          string
-	StorageType      string
-	DBInstanceStatus string
+func NewRdsClient(profile, region string) rdsApi {
+	return rds.NewFromConfig(GetSession(profile, region))
 }
 
-// DescribeDBInstances returns slice DBInstance structure.
-func (c *RDS) DescribeDBInstances(input *rds.DescribeDBInstancesInput) ([]DBInstance, error) {
-	ctx := context.TODO()
-	output, err := c.Client.DescribeDBInstances(ctx, input)
+func GenerateDescribeDBInstancesInput(opts *RdsOpts) (*rds.DescribeDBInstancesInput, error) {
+	i := &rds.DescribeDBInstancesInput{}
+
+	// t := opts.Tag
+	// if len(t) > 0 {
+	// 	if !strings.Contains(t, ":") {
+	// 		return nil, fmt.Errorf("tag format is invalid (e.g. Name:MyInstance)")
+	// 	}
+
+	// 	s := strings.Split(t, ":")
+	// 	i.Filters = append(i.Filters, types.Filter{
+	// 		Name:   aws.String("tag:" + s[0]),
+	// 		Values: []string{s[1]},
+	// 	})
+	// }
+
+	return i, nil
+}
+
+func DescribeDBInstances(client rdsApi, input *rds.DescribeDBInstancesInput) ([][]string, error) {
+	o, err := client.DescribeDBInstances(context.Background(), input)
 	if err != nil {
-		return nil, fmt.Errorf("describe db instances: %v", err)
+		return nil, err
 	}
 
-	if len(output.DBInstances) == 0 {
-		return nil, fmt.Errorf("no resources")
-	}
-
-	list := []DBInstance{}
-	for _, i := range output.DBInstances {
-		list = append(list, DBInstance{
-			Name:             *i.DBInstanceIdentifier,
-			DBInstanceClass:  *i.DBInstanceClass,
-			Engine:           *i.Engine,
-			EngineVersion:    *i.EngineVersion,
-			Storage:          strconv.Itoa(int(*i.AllocatedStorage)) + "GB",
-			StorageType:      *i.StorageType,
-			DBInstanceStatus: *i.DBInstanceStatus,
-		})
-	}
-
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].Name < list[j].Name
-	})
-
-	return list, nil
-}
-
-func PrintDBInstances(wrt io.Writer, resources []DBInstance) error {
-	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
-	header := []string{
-		"Name",
-		"DBInstanceClass",
-		"Engine",
-		"EngineVersion",
-		"Storage",
-		"StrageType",
-		"DBInstanceStatus",
-	}
-
-	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
-		return fmt.Errorf("header join: %v", err)
-	}
-
-	for _, r := range resources {
-		if _, err := fmt.Fprintln(w, r.RdsTabString()); err != nil {
-			return fmt.Errorf("resources join: %v", err)
+	var instances [][]string
+	for _, i := range o.DBInstances {
+		instance := []string{
+			aws.ToString(i.DBInstanceIdentifier),
+			aws.ToString(i.DBInstanceClass),
+			aws.ToString(i.Engine),
+			aws.ToString(i.EngineVersion),
+			fmt.Sprintf("%dGB", *i.AllocatedStorage),
+			aws.ToString(i.StorageType),
+			aws.ToString(i.DBInstanceStatus),
 		}
+		instances = append(instances, instance)
 	}
 
-	if err := w.Flush(); err != nil {
-		return fmt.Errorf("flush: %v", err)
-	}
-
-	return nil
+	return instances, nil
 }
 
-func (i *DBInstance) RdsTabString() string {
-	fields := []string{
-		i.Name,
-		i.DBInstanceClass,
-		i.Engine,
-		i.EngineVersion,
-		i.Storage,
-		i.StorageType,
-		i.DBInstanceStatus,
-	}
-
-	return strings.Join(fields, "\t")
+func GenerateDescribeDBClustersInput(opts *RdsOpts) *rds.DescribeDBClustersInput {
+	return &rds.DescribeDBClustersInput{}
 }
 
-// DBCluster structure is rds cluster information.
-type DBCluster struct {
-	Name          string
-	EngineMode    string
-	EngineVersion string
-	Capacity      string
-	Status        string
-}
-
-// DescribeDBClusters returns slice DBCluster structure.
-func (c *RDS) DescribeDBClusters(input *rds.DescribeDBClustersInput) ([]DBCluster, error) {
-	ctx := context.TODO()
-	output, err := c.Client.DescribeDBClusters(ctx, input)
+func DescribeDBClusters(client rdsApi, input *rds.DescribeDBClustersInput) ([][]string, error) {
+	o, err := client.DescribeDBClusters(context.Background(), input)
 	if err != nil {
-		return nil, fmt.Errorf("describe db clusters: %v", err)
+		return nil, err
 	}
 
-	if len(output.DBClusters) == 0 {
-		return nil, fmt.Errorf("no resources")
-	}
-
-	list := []DBCluster{}
-	for _, i := range output.DBClusters {
-		var cap string = "None"
-		if i.Capacity != nil {
-			cap = strconv.Itoa(int(*i.Capacity))
+	var clusters [][]string
+	for _, c := range o.DBClusters {
+		cluster := []string{
+			aws.ToString(c.DBClusterIdentifier),
+			aws.ToString(c.Engine),
+			aws.ToString(c.EngineVersion),
+			aws.ToString(c.EngineMode),
+			aws.ToString(c.Status),
 		}
-
-		list = append(list, DBCluster{
-			Name:          *i.DBClusterIdentifier,
-			EngineMode:    *i.EngineMode,
-			EngineVersion: *i.EngineVersion,
-			Capacity:      cap,
-			Status:        string(i.ActivityStreamStatus),
-		})
+		clusters = append(clusters, cluster)
 	}
 
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].Name < list[j].Name
-	})
-
-	return list, nil
-}
-
-func PrintDBClusters(wrt io.Writer, resources []DBCluster) error {
-	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
-	header := []string{
-		"Name",
-		"EngineMode",
-		"EngineVersion",
-		"Capacity",
-		"Status",
-	}
-
-	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
-		return fmt.Errorf("header join: %v", err)
-	}
-
-	for _, r := range resources {
-		if _, err := fmt.Fprintln(w, r.RdsClusterTabString()); err != nil {
-			return fmt.Errorf("resources join: %v", err)
-		}
-	}
-
-	if err := w.Flush(); err != nil {
-		return fmt.Errorf("flush: %v", err)
-	}
-
-	return nil
-}
-
-func (i *DBCluster) RdsClusterTabString() string {
-	fields := []string{
-		i.Name,
-		i.EngineMode,
-		i.EngineVersion,
-		i.Capacity,
-		i.Status,
-	}
-
-	return strings.Join(fields, "\t")
-}
-
-// DBClusterEndpoint structure is rds cluster endpoint information.
-type DBClusterEndpoint struct {
-	Endpoint     string
-	EndpointType string
-	Status       string
-}
-
-// DescribeDBClusterEndpoints returns slice DBInstance structure.
-func (c *RDS) DescribeDBClusterEndpoints(input *rds.DescribeDBClusterEndpointsInput) ([]DBClusterEndpoint, error) {
-	ctx := context.TODO()
-	output, err := c.Client.DescribeDBClusterEndpoints(ctx, input)
-	if err != nil {
-		return nil, fmt.Errorf("describe db cluster endpoints: %v", err)
-	}
-
-	if len(output.DBClusterEndpoints) == 0 {
-		return nil, fmt.Errorf("no resources")
-	}
-
-	list := []DBClusterEndpoint{}
-	for _, i := range output.DBClusterEndpoints {
-		list = append(list, DBClusterEndpoint{
-			Endpoint:     *i.Endpoint,
-			EndpointType: *i.EndpointType,
-			Status:       *i.Status,
-		})
-	}
-
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].Endpoint < list[j].Endpoint
-	})
-
-	return list, nil
-}
-
-func PrintDBClusterEndpoints(wrt io.Writer, resources []DBClusterEndpoint) error {
-	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
-	header := []string{
-		"Endpoint",
-		"EndpointType",
-		"Status",
-	}
-
-	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
-		return fmt.Errorf("header join: %v", err)
-	}
-
-	for _, r := range resources {
-		if _, err := fmt.Fprintln(w, r.RdsClusterEndpointTabString()); err != nil {
-			return fmt.Errorf("resources join: %v", err)
-		}
-	}
-
-	if err := w.Flush(); err != nil {
-		return fmt.Errorf("flush: %v", err)
-	}
-
-	return nil
-}
-
-func (i *DBClusterEndpoint) RdsClusterEndpointTabString() string {
-	fields := []string{
-		i.Endpoint,
-		i.EndpointType,
-		i.Status,
-	}
-
-	return strings.Join(fields, "\t")
-}
-
-// ExportTasks structure is rds export tasks information.
-type ExportTasks struct {
-	ExportTaskIdentifier string
-	Source               string
-	Status               string
-	TaskStartTime        string
-	TaskEndTime          string
-}
-
-// DescribeExportTasks returns slice ExportTasks structure.
-func (c *RDS) DescribeExportTasks(input *rds.DescribeExportTasksInput) ([]ExportTasks, error) {
-	list := []ExportTasks{}
-	paginator := rds.NewDescribeExportTasksPaginator(c.Client, input)
-
-	for paginator.HasMorePages() {
-		output, err := paginator.NextPage(context.Background())
-		if err != nil {
-			return nil, fmt.Errorf("describe export tasks: %v", err)
-		}
-
-		for _, i := range output.ExportTasks {
-			startTime := "None"
-			if i.TaskStartTime != nil {
-				startTime = i.TaskStartTime.String()
-			}
-
-			endTime := "None"
-			if i.TaskEndTime != nil {
-				endTime = i.TaskEndTime.String()
-			}
-
-			split := strings.Split(*i.SourceArn, ":")
-			source := split[len(split)-1]
-
-			list = append(list, ExportTasks{
-				ExportTaskIdentifier: *i.ExportTaskIdentifier,
-				Source:               source,
-				Status:               string(*i.Status),
-				TaskStartTime:        startTime,
-				TaskEndTime:          endTime,
-			})
-		}
-	}
-
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].TaskStartTime > list[j].TaskStartTime
-	})
-
-	return list, nil
-}
-
-func PrintExportTasks(wrt io.Writer, resources []ExportTasks) error {
-	w := tabwriter.NewWriter(wrt, 0, 8, 1, ' ', 0)
-	header := []string{
-		"ExportTaskIdentifier",
-		"SourceArn",
-		"Status",
-		"TaskStartTime",
-		"TaskEndTime",
-	}
-
-	if _, err := fmt.Fprintln(w, strings.Join(header, "\t")); err != nil {
-		return fmt.Errorf("header join: %v", err)
-	}
-
-	for _, r := range resources {
-		if _, err := fmt.Fprintln(w, r.ExportTasksTabString()); err != nil {
-			return fmt.Errorf("resources join: %v", err)
-		}
-	}
-
-	if err := w.Flush(); err != nil {
-		return fmt.Errorf("flush: %v", err)
-	}
-
-	return nil
-}
-
-func (i *ExportTasks) ExportTasksTabString() string {
-	fields := []string{
-		i.ExportTaskIdentifier,
-		i.Source,
-		i.Status,
-		i.TaskStartTime,
-		i.TaskEndTime,
-	}
-
-	return strings.Join(fields, "\t")
+	return clusters, nil
 }

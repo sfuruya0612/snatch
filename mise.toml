@@ -1,0 +1,48 @@
+[tools]
+go = "1.23.4"
+
+[tasks.setup]
+description = "Setup the project"
+run = "go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
+
+[tasks.fmt]
+description = "Run go fmt"
+run = "go fmt ./..."
+
+[tasks.vet]
+description = "Run go vet"
+run = "go vet ./..."
+
+[tasks.tidy]
+description = "Run go mod tidy"
+run = "go mod tidy -v"
+
+[tasks.golangci-lint]
+description = "Run golangci-lint"
+run = "golangci-lint run ./..."
+
+[tasks.prepare]
+description = "Prepare the project"
+depends = ["fmt", "vet", "tidy", "golangci-lint"]
+
+[tasks.update]
+description = "Update packages"
+run = "go get -u ./..."
+depends_post = ["tidy"]
+
+[tasks.test]
+description = "Run tests"
+run = "go test -v -race --cover ./..."
+depends = ["prepare"]
+
+[tasks.install]
+description = "Install binary"
+shell = 'bash -c'
+run = "go install"
+# run = '''
+# COMMIT_HASH=$(git rev-parse --short HEAD) go install -ldflags "-X 'main.commit=$COMMIT_HASH'"
+# '''
+
+[tasks.docs]
+description = "Generate documentation"
+run = "go run docs/main.go"
